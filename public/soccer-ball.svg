@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <clipPath id="b"><circle cx="256" cy="256" r="186"/></clipPath>
+  </defs>
+  <!-- Green rounded background -->
+  <rect width="512" height="512" rx="88" fill="#15803d"/>
+  <!-- White ball -->
+  <circle cx="256" cy="256" r="186" fill="white" stroke="#d1d5db" stroke-width="3"/>
+  <!-- Patches clipped to ball -->
+  <g clip-path="url(#b)" fill="#111827" stroke="white" stroke-width="9" stroke-linejoin="round">
+    <!-- Centre pentagon -->
+    <polygon points="256,188 321,235 296,311 216,311 191,235"/>
+    <!-- Top-right outer patch -->
+    <polygon points="317,171 299,116 347,81 395,116 376,171"/>
+    <!-- Right outer patch -->
+    <polygon points="355,289 403,254 451,289 432,345 374,345"/>
+    <!-- Bottom outer patch -->
+    <polygon points="256,361 304,396 285,452 227,452 208,396"/>
+    <!-- Left outer patch -->
+    <polygon points="157,289 138,345 80,345 61,289 109,254"/>
+    <!-- Top-left outer patch -->
+    <polygon points="194,172 136,172 117,116 165,81 213,116"/>
+  </g>
+</svg>
