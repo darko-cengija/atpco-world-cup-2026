@@ -5,6 +5,7 @@ import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import { defineSecret, defineString } from 'firebase-functions/params'
 import { Resend } from 'resend'
 import { fifaMemberAssociations } from './fifaMemberAssociations'
+import { calculateSyncPeriod, syncLiveFixtures, syncMlsFixtureCatalog } from './sync'
 import { refreshWinningChances } from './winningChances'
 
 admin.initializeApp()
@@ -167,6 +168,7 @@ export const syncCurrentUser = onCall({ region: FUNCTIONS_REGION }, async (reque
   const authName = cleanString(data?.displayName, MAX_DISPLAY_NAME_LENGTH)
   const photoURL = typeof data?.photoURL === 'string' && data.photoURL.length <= 500 ? data.photoURL : null
   const role = existing?.role === 'admin' || isBootstrapAdminEmail(email) ? 'admin' : 'player'
+  const existingAvatarUrl = existing?.avatarUrl
 
   const user = {
     uid,
@@ -175,8 +177,8 @@ export const syncCurrentUser = onCall({ region: FUNCTIONS_REGION }, async (reque
       ?? inviteName
       ?? authName
       ?? email.split('@')[0],
-    avatarUrl: typeof existing?.avatarUrl === 'string' || existing?.avatarUrl === null
-      ? existing.avatarUrl
+    avatarUrl: typeof existingAvatarUrl === 'string' && existingAvatarUrl.trim()
+      ? existingAvatarUrl
       : photoURL,
     role,
     onboardingComplete: existing?.onboardingComplete === true,
@@ -293,6 +295,7 @@ async function ensureTeamLists(
   teams: TeamRow[],
   resetToDefault = false,
   ready = true,
+  rankingSnapshot = RANKING_SNAPSHOT,
 ): Promise<void> {
   const db = admin.firestore()
   const batch = db.batch()
@@ -309,7 +312,7 @@ async function ensureTeamLists(
       userId: player.uid,
       teamIds,
       teamCount: teamIds.length,
-      rankingSnapshot: RANKING_SNAPSHOT,
+      rankingSnapshot,
       ...(listSnap.exists ? {} : { createdAt: admin.firestore.FieldValue.serverTimestamp() }),
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     }, { merge: true })
@@ -323,6 +326,41 @@ async function ensureTeamLists(
   }
 
   await batch.commit()
+}
+
+async function getDrawRankingSnapshot(): Promise<string> {
+  const snap = await admin.firestore().doc('config/app').get()
+  const value = snap.data()?.drawRankingSnapshot
+  return typeof value === 'string' && value.trim() ? value.trim() : RANKING_SNAPSHOT
+}
+
+async function refreshWinningChancesForActiveCompetition(apiKey: string | null) {
+  const db = admin.firestore()
+  const configSnap = await db.doc('config/app').get()
+  const competitionMode = configSnap.data()?.competitionMode
+
+  if (typeof competitionMode === 'string' && competitionMode !== 'world_cup_2026') {
+    await db.doc('stats/winningChances').set({
+      rows: [],
+      simulationCount: 0,
+      generatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      model: `disabled-for-${competitionMode}`,
+      oddsStatus: 'skipped_non_world_cup',
+      oddsFixtureCount: 0,
+      oddsBackedMatches: 0,
+      apiRequestsUsed: 0,
+    })
+
+    return {
+      rows: [],
+      apiRequestsUsed: 0,
+      oddsStatus: 'skipped_non_world_cup',
+      oddsFixtureCount: 0,
+      oddsBackedMatches: 0,
+    }
+  }
+
+  return await refreshWinningChances(apiKey)
 }
 
 async function readTeamList(userId: string, teams: TeamRow[]): Promise<string[]> {
@@ -473,6 +511,7 @@ export const startTeamsDraw = onCall({ region: FUNCTIONS_REGION }, async (reques
 
   const db = admin.firestore()
   const { teams, players } = await loadDrawContext()
+  const rankingSnapshot = await getDrawRankingSnapshot()
   const { min, max } = computeTeamsPerPlayerLimits(teams.length, players.length)
   if (min > max) {
     throw new HttpsError(
@@ -493,7 +532,7 @@ export const startTeamsDraw = onCall({ region: FUNCTIONS_REGION }, async (reques
     )
   }
 
-  await ensureTeamLists(players, teams)
+  await ensureTeamLists(players, teams, false, true, rankingSnapshot)
   await deleteCollection('playerTeams')
 
   const state: DrawState = {
@@ -715,7 +754,7 @@ export const completeTeamsDraw = onCall(
     }, { merge: true })
     await batch.commit()
 
-    await refreshWinningChances(apiFootballKey.value() || null)
+    await refreshWinningChancesForActiveCompetition(apiFootballKey.value() || null)
 
     return { success: true }
   },
@@ -853,7 +892,7 @@ export const replaceWorldCupTeam = onCall(
     }
 
     try {
-      winningChances = await refreshWinningChances(apiFootballKey.value() || null)
+      winningChances = await refreshWinningChancesForActiveCompetition(apiFootballKey.value() || null)
     } catch (error) {
       console.error('replaceWorldCupTeam: failed to refresh winning chances', error)
       warnings.push('Team was replaced, but winning chances could not be refreshed automatically.')
@@ -875,12 +914,13 @@ export const resetTeamsDrawForTesting = onCall({ region: FUNCTIONS_REGION }, asy
 
   const db = admin.firestore()
   const { teams, players } = await loadDrawContext()
+  const rankingSnapshot = await getDrawRankingSnapshot()
 
   await Promise.all([
     deleteCollection('playerTeams'),
     deleteCollection('predictions'),
   ])
-  await ensureTeamLists(players, teams, true, false)
+  await ensureTeamLists(players, teams, true, false, rankingSnapshot)
 
   const batch = db.batch()
   batch.delete(db.doc(DRAW_STATE_PATH))
@@ -1059,7 +1099,7 @@ export const refreshWinningChancesDaily = onSchedule(
     secrets: [apiFootballKey],
   },
   async () => {
-    await refreshWinningChances(apiFootballKey.value() || null)
+    await refreshWinningChancesForActiveCompetition(apiFootballKey.value() || null)
   },
 )
 
@@ -1072,7 +1112,7 @@ export const refreshWinningChancesNow = onCall(
   },
   async (request) => {
     await requireAdmin(request.auth?.uid)
-    const result = await refreshWinningChances(apiFootballKey.value() || null)
+    const result = await refreshWinningChancesForActiveCompetition(apiFootballKey.value() || null)
     return {
       success: true,
       apiRequestsUsed: result.apiRequestsUsed,
@@ -1081,5 +1121,82 @@ export const refreshWinningChancesNow = onCall(
       oddsBackedMatches: result.oddsBackedMatches,
       rows: result.rows.length,
     }
+  },
+)
+
+export const refreshMlsFixturesDaily = onSchedule(
+  {
+    region: FUNCTIONS_REGION,
+    schedule: '15 8 * * *',
+    timeZone: 'Etc/UTC',
+    timeoutSeconds: 540,
+    memory: '512MiB',
+    secrets: [apiFootballKey],
+  },
+  async () => {
+    await syncMlsFixtureCatalog(apiFootballKey.value() || null)
+  },
+)
+
+export const calculateLiveSyncPeriodDaily = onSchedule(
+  {
+    region: FUNCTIONS_REGION,
+    schedule: '0 10 * * *',
+    timeZone: 'Etc/UTC',
+    timeoutSeconds: 120,
+  },
+  async () => {
+    await calculateSyncPeriod()
+  },
+)
+
+export const syncLiveMatches = onSchedule(
+  {
+    region: FUNCTIONS_REGION,
+    schedule: 'every 1 minutes',
+    timeoutSeconds: 120,
+    secrets: [apiFootballKey],
+  },
+  async () => {
+    await syncLiveFixtures(apiFootballKey.value() || null)
+  },
+)
+
+export const refreshMlsFixturesNow = onCall(
+  {
+    region: FUNCTIONS_REGION,
+    timeoutSeconds: 540,
+    memory: '512MiB',
+    secrets: [apiFootballKey],
+  },
+  async (request) => {
+    await requireAdmin(request.auth?.uid)
+    const result = await syncMlsFixtureCatalog(apiFootballKey.value() || null)
+    return { success: true, ...result }
+  },
+)
+
+export const calculateLiveSyncPeriodNow = onCall(
+  {
+    region: FUNCTIONS_REGION,
+    timeoutSeconds: 120,
+  },
+  async (request) => {
+    await requireAdmin(request.auth?.uid)
+    const result = await calculateSyncPeriod()
+    return { success: true, ...result }
+  },
+)
+
+export const syncLiveMatchesNow = onCall(
+  {
+    region: FUNCTIONS_REGION,
+    timeoutSeconds: 120,
+    secrets: [apiFootballKey],
+  },
+  async (request) => {
+    await requireAdmin(request.auth?.uid)
+    const result = await syncLiveFixtures(apiFootballKey.value() || null)
+    return { success: true, ...result }
   },
 )

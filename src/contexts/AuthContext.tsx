@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
 import { httpsCallable } from 'firebase/functions'
-import { auth, db, functions, googleProvider } from '@/firebase'
+import { auth, authPersistenceReady, db, functions, googleProvider } from '@/firebase'
 import { isStandalone } from '@/lib/pwa'
 import type { AppUser } from '@/types'
 
@@ -65,6 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     async function finishRedirectSignIn() {
       try {
+        await authPersistenceReady
         const result = await getRedirectResult(auth)
         if (!result) return
 
@@ -98,10 +99,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthError(null)
 
       if (shouldUseRedirectSignIn()) {
+        await authPersistenceReady
         await signInWithRedirect(auth, googleProvider)
         return { redirecting: true }
       }
 
+      await authPersistenceReady
       const result = await signInWithPopup(auth, googleProvider)
       const appUser = await syncCurrentUser(result.user)
       setFirebaseUser(result.user)

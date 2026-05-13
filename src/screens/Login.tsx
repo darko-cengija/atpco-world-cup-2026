@@ -56,6 +56,16 @@ export default function Login() {
     setSigningIn(false)
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-brand-bg flex flex-col items-center justify-center px-6 text-center">
+        <div className="mb-5 w-8 h-8 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
+        <h1 className="text-lg font-bold text-white">Finishing sign-in</h1>
+        <p className="mt-2 max-w-xs text-sm text-gray-400">One moment while Google sends you back to the app.</p>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-brand-bg flex flex-col items-center justify-center px-6">
       {/* Logo / title */}

@@ -320,7 +320,7 @@ export default function DrawDay() {
       {showStartConfirm && (
         <ConfirmModal
           title="Start the draw?"
-          body="All player lists will lock. Players who have not saved a list will use the default FIFA ranking order."
+          body="All player lists will lock. Players who have not saved a list will use the default ranking order."
           confirmLabel="Start"
           onCancel={() => setShowStartConfirm(false)}
           onConfirm={startDraw}

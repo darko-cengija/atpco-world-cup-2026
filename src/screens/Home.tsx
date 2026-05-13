@@ -8,6 +8,7 @@ import { HOME_MATCH_WINDOW } from '@/lib/config'
 import { useTeamOwners } from '@/hooks/useTeamOwners'
 import { useUserPredictions } from '@/hooks/useUserPredictions'
 import { getCountryName } from '@/lib/translations'
+import { useDrawConfig } from '@/hooks/useDrawConfig'
 
 function formatMatchDate(date: Date) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -22,6 +23,7 @@ export default function Home() {
   const { user } = useAuth()
   const { matches, loading, error } = useUpcomingMatches(HOME_MATCH_WINDOW)
   const { predictions } = useUserPredictions(user?.uid)
+  const { config } = useDrawConfig()
 
   // Collect all team IDs from upcoming matches so we can look up their owners
   const allTeamIds = useMemo(
@@ -42,7 +44,7 @@ export default function Home() {
     <div className="px-4 py-2">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-white">Upcoming Matches</h1>
-        <p className="text-gray-400 text-sm mt-1">World Cup 26</p>
+        <p className="text-gray-400 text-sm mt-1">{config.competitionName ?? 'World Cup 26'}</p>
       </div>
 
       <div className="space-y-4">

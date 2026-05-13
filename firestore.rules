@@ -20,6 +20,16 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/config/app).data.drawStatus == 'list_building';
     }
 
+    function drawTeamCount() {
+      return get(/databases/$(database)/documents/config/app).data.drawTeamCount;
+    }
+
+    function validDrawTeamCount() {
+      return drawTeamCount() is int
+        && drawTeamCount() > 0
+        && drawTeamCount() <= 128;
+    }
+
     function validProfileUpdate() {
       return request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['displayName', 'avatarUrl', 'onboardingComplete'])
@@ -51,8 +61,9 @@ service cloud.firestore {
           .hasOnly(['userId', 'teamIds', 'teamCount', 'rankingSnapshot', 'updatedAt', 'createdAt'])
         && request.resource.data.userId == userId
         && request.resource.data.teamIds is list
-        && request.resource.data.teamIds.size() == 48
-        && request.resource.data.teamCount == 48
+        && validDrawTeamCount()
+        && request.resource.data.teamIds.size() == drawTeamCount()
+        && request.resource.data.teamCount == drawTeamCount()
         && request.resource.data.updatedAt == request.time;
     }
 
@@ -60,7 +71,8 @@ service cloud.firestore {
       return request.resource.data.keys().hasOnly(['userId', 'ready', 'teamCount', 'updatedAt'])
         && request.resource.data.userId == userId
         && request.resource.data.ready is bool
-        && request.resource.data.teamCount == 48
+        && validDrawTeamCount()
+        && request.resource.data.teamCount == drawTeamCount()
         && request.resource.data.updatedAt == request.time;
     }
 

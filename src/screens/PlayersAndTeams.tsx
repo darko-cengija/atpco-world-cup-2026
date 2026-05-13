@@ -26,7 +26,9 @@ interface PlayerRow {
 }
 
 interface Config {
-  teamsPerPlayer: number
+  teamsPerPlayer?: number
+  competitionMode?: string
+  drawRankingSnapshot?: string
 }
 
 export default function PlayersAndTeams() {
@@ -35,7 +37,7 @@ export default function PlayersAndTeams() {
 
   const [rows, setRows] = useState<PlayerRow[]>([])
   const [allTeams, setAllTeams] = useState<Team[]>([])
-  const [config, setConfig] = useState<Config>({ teamsPerPlayer: 48 })
+  const [config, setConfig] = useState<Config>({})
   const [loading, setLoading] = useState(true)
   const [gameStartedAt, setGameStartedAt] = useState<Timestamp | null>(null)
   const [showStopModal, setShowStopModal] = useState(false)
@@ -46,6 +48,7 @@ export default function PlayersAndTeams() {
   const [togglingGame, setTogglingGame] = useState(false)
   const [confirmDeleteUid, setConfirmDeleteUid] = useState<string | null>(null)
   const [deletingUid, setDeletingUid] = useState<string | null>(null)
+  const canReplaceTeams = !config.competitionMode || config.competitionMode === 'world_cup_2026'
 
   useEffect(() => {
     load()
@@ -209,7 +212,7 @@ export default function PlayersAndTeams() {
         <div className="bg-brand-card border border-brand-border rounded-2xl p-6 max-w-sm w-full">
           <h2 className="text-white font-bold text-lg mb-2">Stop tracking?</h2>
           <p className="text-gray-400 text-sm mb-6">
-            This will reset the draw, return lists to the FIFA ranking, and delete assigned teams.
+            This will reset the draw, return lists to the default ranking, and delete assigned teams.
           </p>
           <div className="flex gap-3">
             <button
@@ -271,7 +274,7 @@ export default function PlayersAndTeams() {
         </div>
       )}
 
-      {isAdmin && (
+      {isAdmin && canReplaceTeams && (
         <button
           type="button"
           onClick={() => {
@@ -312,7 +315,7 @@ export default function PlayersAndTeams() {
               <div className="flex-1 min-w-0">
                 <span className="font-semibold text-white">{row.user.displayName}</span>
                 <span className="text-xs text-gray-500 ml-2">
-                  {row.teams.length}/{config.teamsPerPlayer} teams
+                  {row.teams.length}/{config.teamsPerPlayer ?? row.teams.length} teams
                 </span>
               </div>
 

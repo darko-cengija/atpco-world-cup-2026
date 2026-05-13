@@ -52,6 +52,8 @@ export default function MyTeamList() {
   const { user } = useAuth()
   const { config } = useDrawConfig()
   const locked = config.drawStatus !== 'list_building'
+  const configuredTeamCount = config.drawTeamCount
+  const rankingSnapshot = config.drawRankingSnapshot ?? RANKING_SNAPSHOT
 
   const [teams, setTeams] = useState<Team[]>([])
   const [order, setOrder] = useState<string[]>([])
@@ -81,6 +83,7 @@ export default function MyTeamList() {
       const listSnap = await getDoc(listRef)
       const savedIds = listSnap.exists() ? ((listSnap.data().teamIds as string[] | undefined) ?? []) : []
       const nextOrder = normalizeOrder(savedIds, allTeams)
+      const expectedTeamCount = configuredTeamCount ?? allTeams.length
 
       if (cancelled) return
 
@@ -96,13 +99,13 @@ export default function MyTeamList() {
             userId: currentUser.uid,
             teamIds: nextOrder,
             teamCount: nextOrder.length,
-            rankingSnapshot: RANKING_SNAPSHOT,
+            rankingSnapshot,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
           }),
           setDoc(doc(db, 'teamListStatuses', currentUser.uid), {
             userId: currentUser.uid,
-            ready: nextOrder.length === 48,
+            ready: nextOrder.length === expectedTeamCount,
             teamCount: nextOrder.length,
             updatedAt: serverTimestamp(),
           }),
@@ -110,7 +113,7 @@ export default function MyTeamList() {
       } else if (allTeams.length > 0 && config.drawStatus === 'list_building') {
         await setDoc(doc(db, 'teamListStatuses', currentUser.uid), {
           userId: currentUser.uid,
-          ready: nextOrder.length === 48,
+          ready: nextOrder.length === expectedTeamCount,
           teamCount: nextOrder.length,
           updatedAt: serverTimestamp(),
         }, { merge: true })
@@ -127,13 +130,14 @@ export default function MyTeamList() {
     return () => {
       cancelled = true
     }
-  }, [config.drawStatus, user])
+  }, [config.drawStatus, configuredTeamCount, rankingSnapshot, user])
 
   useEffect(() => {
     if (!user || !loadedRef.current || locked || order.length === 0) return
 
     const serialized = order.join(',')
     if (serialized === lastSavedRef.current) return
+    const expectedTeamCount = configuredTeamCount ?? teams.length
 
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     setSaveStatus('saving')
@@ -145,12 +149,12 @@ export default function MyTeamList() {
             userId: user.uid,
             teamIds: order,
             teamCount: order.length,
-            rankingSnapshot: RANKING_SNAPSHOT,
+            rankingSnapshot,
             updatedAt: serverTimestamp(),
           }, { merge: true }),
           setDoc(doc(db, 'teamListStatuses', user.uid), {
             userId: user.uid,
-            ready: order.length === 48,
+            ready: order.length === expectedTeamCount,
             teamCount: order.length,
             updatedAt: serverTimestamp(),
           }, { merge: true }),
@@ -165,7 +169,7 @@ export default function MyTeamList() {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
     }
-  }, [locked, order, user])
+  }, [configuredTeamCount, locked, order, rankingSnapshot, teams.length, user])
 
   const teamById = useMemo(() => {
     const result: Record<string, Team> = {}
@@ -199,7 +203,7 @@ export default function MyTeamList() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold text-white">My List</h1>
-            <p className="text-gray-400 text-sm mt-1">FIFA ranking: April 1, 2026</p>
+            <p className="text-gray-400 text-sm mt-1">{rankingSnapshot}</p>
           </div>
           <SaveBadge locked={locked} status={saveStatus} />
         </div>

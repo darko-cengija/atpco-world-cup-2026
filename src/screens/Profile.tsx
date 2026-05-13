@@ -24,13 +24,18 @@ export default function Profile() {
 
   // What to show as the avatar preview
   const googlePhoto = firebaseUser?.photoURL ?? null
+  const selectedAvatarUrl = selectedEmoji
+    ? `emoji:${selectedEmoji}`
+    : googlePhoto
 
   // Derive saved/dirty state from current inputs vs stored values
   const savedEmoji = user?.avatarUrl?.startsWith('emoji:')
     ? user.avatarUrl.replace('emoji:', '')
     : null
   const isDirty =
-    displayName !== (user?.displayName ?? '') || selectedEmoji !== savedEmoji
+    displayName !== (user?.displayName ?? '')
+    || selectedEmoji !== savedEmoji
+    || (!selectedEmoji && googlePhoto !== null && user?.avatarUrl !== googlePhoto)
   const isSaved = !isDirty
 
   async function handleSave() {
@@ -42,9 +47,7 @@ export default function Profile() {
     clearAuthError()
 
     // avatarUrl: emoji:⚽ for emoji picks, or Google photo URL, or null
-    const avatarUrl = selectedEmoji
-      ? `emoji:${selectedEmoji}`
-      : firebaseUser.photoURL ?? null
+    const avatarUrl = selectedAvatarUrl
 
     try {
       const result = await saveProfile({
@@ -95,8 +98,8 @@ export default function Profile() {
           <div className="w-24 h-24 rounded-full bg-brand-card border-2 border-brand-border overflow-hidden flex items-center justify-center">
             {selectedEmoji ? (
               <span className="text-5xl">{selectedEmoji}</span>
-            ) : googlePhoto ? (
-              <img src={googlePhoto} alt="avatar" className="w-full h-full object-cover" />
+            ) : selectedAvatarUrl ? (
+              <img src={selectedAvatarUrl} alt="avatar" className="w-full h-full object-cover" />
             ) : (
               <span className="text-4xl font-bold text-brand-accent">
                 {displayName?.[0]?.toUpperCase() ?? '?'}

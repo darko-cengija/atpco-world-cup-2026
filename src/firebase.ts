@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app'
 import { initializeAppCheck, ReCaptchaEnterpriseProvider } from 'firebase/app-check'
-import { getAuth, GoogleAuthProvider } from 'firebase/auth'
+import { browserLocalPersistence, getAuth, GoogleAuthProvider, setPersistence } from 'firebase/auth'
 import { getFirestore } from 'firebase/firestore'
 import { getFunctions } from 'firebase/functions'
 import { getMessaging, isSupported } from 'firebase/messaging'
@@ -31,6 +31,9 @@ export const appCheck =
     : null
 
 export const auth = getAuth(app)
+export const authPersistenceReady = setPersistence(auth, browserLocalPersistence).catch((error) => {
+  console.error('Failed to configure Firebase Auth persistence.', error)
+})
 export const db = getFirestore(app)
 export const functions = getFunctions(app, FIREBASE_FUNCTIONS_REGION)
 export const googleProvider = new GoogleAuthProvider()

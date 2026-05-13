@@ -39,8 +39,11 @@ export type DrawPhase = 'round_intro' | 'picking' | 'round_summary' | 'completed
 export interface DrawConfig {
   drawStatus?: DrawStatus
   drawRankingSnapshot?: string
+  drawRankingSnapshotDate?: string
   drawTeamCount?: number
   teamsPerPlayer?: number
+  competitionMode?: string
+  competitionName?: string
   gameStartedAt?: unknown
 }
 

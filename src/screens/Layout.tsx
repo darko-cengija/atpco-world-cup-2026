@@ -21,7 +21,7 @@ const preDrawNavItems = [
 ]
 
 export default function Layout() {
-  const { user } = useAuth()
+  const { user, firebaseUser } = useAuth()
   const location = useLocation()
   const isOnChat = location.pathname === '/chat'
   const { unreadCount, mentionCount } = useUnreadChat(user?.uid, isOnChat)
@@ -29,6 +29,7 @@ export default function Layout() {
   const navItems = config.drawStatus === 'list_building' || config.drawStatus === 'draw_day'
     ? preDrawNavItems
     : liveNavItems
+  const avatarUrl = user?.avatarUrl ?? firebaseUser?.photoURL ?? null
 
   return (
     <div className="flex flex-col min-h-screen bg-brand-bg">
@@ -44,10 +45,10 @@ export default function Layout() {
           to="/profile"
           className="w-8 h-8 rounded-full bg-brand-card border border-brand-border overflow-hidden flex items-center justify-center"
         >
-          {user?.avatarUrl?.startsWith('emoji:') ? (
-            <span className="text-lg">{user.avatarUrl.replace('emoji:', '')}</span>
-          ) : user?.avatarUrl ? (
-            <img src={user.avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+          {avatarUrl?.startsWith('emoji:') ? (
+            <span className="text-lg">{avatarUrl.replace('emoji:', '')}</span>
+          ) : avatarUrl ? (
+            <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
           ) : (
             <span className="text-sm font-bold text-brand-accent">
               {user?.displayName?.[0]?.toUpperCase() ?? '?'}
