@@ -40,7 +40,7 @@ service cloud.firestore {
           request.resource.data.avatarUrl == null
           || (
             request.resource.data.avatarUrl is string
-            && request.resource.data.avatarUrl.size() <= 500
+            && request.resource.data.avatarUrl.size() <= 2000
           )
         )
         && request.resource.data.onboardingComplete is bool;
@@ -91,7 +91,7 @@ service cloud.firestore {
           request.resource.data.get('authorAvatar', null) == null
           || (
             request.resource.data.authorAvatar is string
-            && request.resource.data.authorAvatar.size() <= 500
+            && request.resource.data.authorAvatar.size() <= 2000
           )
         )
         && request.resource.data.timestamp == request.time

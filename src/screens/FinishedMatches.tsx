@@ -208,6 +208,8 @@ export default function FinishedMatches() {
                     {users.map((u) => {
                       const pred = predictions.find((p) => p.userId === u.uid)
                       const isMe = u.uid === user?.uid
+                      const displayName = isMe ? user?.displayName ?? u.displayName : u.displayName
+                      const avatarUrl = isMe ? user?.avatarUrl ?? u.avatarUrl : u.avatarUrl
                       const correct = pred?.outcome === actualOutcome
 
                       return (
@@ -221,9 +223,9 @@ export default function FinishedMatches() {
                               : 'border-red-800/60 bg-red-900/20 text-red-400'
                           }`}
                         >
-                          <AvatarTiny url={u.avatarUrl} name={u.displayName} />
+                          <AvatarTiny url={avatarUrl} name={displayName} />
                           <span className={isMe ? 'font-bold' : ''}>
-                            {u.displayName.split(' ')[0]}
+                            {displayName.split(' ')[0]}
                           </span>
                           {pred ? (
                             <>

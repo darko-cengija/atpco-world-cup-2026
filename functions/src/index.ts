@@ -24,6 +24,7 @@ const RANKING_SNAPSHOT = 'FIFA/Coca-Cola Men’s World Ranking, 1 April 2026'
 const VALID_CONFEDERATIONS = new Set(['AFC', 'CAF', 'CONCACAF', 'CONMEBOL', 'OFC', 'UEFA'])
 const MAX_DISPLAY_NAME_LENGTH = 80
 const MAX_EMAIL_LENGTH = 254
+const MAX_AVATAR_URL_LENGTH = 2000
 const MAX_ALIAS_LENGTH = 80
 const MAX_FLAG_LENGTH = 16
 
@@ -92,7 +93,7 @@ function cleanString(value: unknown, maxLength: number): string | null {
 
 function cleanAvatarUrl(value: unknown): string | null {
   if (value === null || value === undefined) return null
-  return cleanString(value, 500)
+  return cleanString(value, MAX_AVATAR_URL_LENGTH)
 }
 
 function escapeHtml(value: string): string {
@@ -156,6 +157,79 @@ function cleanOptionalString(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null
 }
 
+async function backfillUserAvatarsFromAuth() {
+  const db = admin.firestore()
+  let pageToken: string | undefined
+  let checked = 0
+  let usersWithGooglePhoto = 0
+  let updated = 0
+  let skippedExistingAvatar = 0
+  let missingProfile = 0
+
+  do {
+    const page = await admin.auth().listUsers(1000, pageToken)
+    checked += page.users.length
+
+    const usersWithPhoto = page.users
+      .map((authUser) => ({
+        uid: authUser.uid,
+        photoURL: cleanAvatarUrl(authUser.photoURL),
+      }))
+      .filter((authUser): authUser is { uid: string; photoURL: string } => authUser.photoURL !== null)
+
+    usersWithGooglePhoto += usersWithPhoto.length
+
+    if (usersWithPhoto.length > 0) {
+      const refs = usersWithPhoto.map((authUser) => db.doc(`users/${authUser.uid}`))
+      const snaps = await db.getAll(...refs)
+      let batch = db.batch()
+      let batchCount = 0
+
+      async function commitIfNeeded(force = false) {
+        if (batchCount === 0 || (!force && batchCount < 400)) return
+        await batch.commit()
+        batch = db.batch()
+        batchCount = 0
+      }
+
+      for (let index = 0; index < usersWithPhoto.length; index += 1) {
+        const authUser = usersWithPhoto[index]
+        const userSnap = snaps[index]
+        if (!userSnap.exists) {
+          missingProfile += 1
+          continue
+        }
+
+        const existingAvatar = userSnap.data()?.avatarUrl
+        if (typeof existingAvatar === 'string' && existingAvatar.trim()) {
+          skippedExistingAvatar += 1
+          continue
+        }
+
+        batch.set(userSnap.ref, {
+          avatarUrl: authUser.photoURL,
+          avatarBackfilledAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true })
+        updated += 1
+        batchCount += 1
+        await commitIfNeeded()
+      }
+
+      await commitIfNeeded(true)
+    }
+
+    pageToken = page.pageToken
+  } while (pageToken)
+
+  return {
+    checked,
+    usersWithGooglePhoto,
+    updated,
+    skippedExistingAvatar,
+    missingProfile,
+  }
+}
+
 export const syncCurrentUser = onCall({ region: FUNCTIONS_REGION }, async (request) => {
   const { uid, email, invite } = await requireInvitedAuth(request)
   const data = request.data as { displayName?: unknown; photoURL?: unknown } | undefined
@@ -166,7 +240,7 @@ export const syncCurrentUser = onCall({ region: FUNCTIONS_REGION }, async (reque
   const existing = userSnap.data()
   const inviteName = invite ? cleanString(invite.data().name, MAX_DISPLAY_NAME_LENGTH) : null
   const authName = cleanString(data?.displayName, MAX_DISPLAY_NAME_LENGTH)
-  const photoURL = typeof data?.photoURL === 'string' && data.photoURL.length <= 500 ? data.photoURL : null
+  const photoURL = cleanAvatarUrl(data?.photoURL)
   const role = existing?.role === 'admin' || isBootstrapAdminEmail(email) ? 'admin' : 'player'
   const existingAvatarUrl = existing?.avatarUrl
 
@@ -192,6 +266,17 @@ export const syncCurrentUser = onCall({ region: FUNCTIONS_REGION }, async (reque
 
   return user
 })
+
+export const backfillUserAvatarsNow = onCall(
+  {
+    region: FUNCTIONS_REGION,
+    timeoutSeconds: 120,
+  },
+  async (request) => {
+    await requireAdmin(request.auth?.uid)
+    return { success: true, ...await backfillUserAvatarsFromAuth() }
+  },
+)
 
 export const updateCurrentUserProfile = onCall({ region: FUNCTIONS_REGION }, async (request) => {
   const { uid, email } = await requireInvitedAuth(request)

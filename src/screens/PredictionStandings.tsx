@@ -148,6 +148,8 @@ export default function PredictionStandings() {
 
           {standings.map((row, i) => {
             const isMe = row.userId === user?.uid
+            const displayName = isMe ? user?.displayName ?? row.displayName : row.displayName
+            const avatarUrl = isMe ? user?.avatarUrl ?? row.avatarUrl : row.avatarUrl
             return (
               <div
                 key={row.userId}
@@ -160,9 +162,9 @@ export default function PredictionStandings() {
                   {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span className="text-gray-500">{i + 1}</span>}
                 </span>
                 <div className="flex items-center gap-2 min-w-0">
-                  <Avatar url={row.avatarUrl} name={row.displayName} className="w-7 h-7" />
+                  <Avatar url={avatarUrl} name={displayName} className="w-7 h-7" />
                   <span className={`text-sm font-semibold truncate ${isMe ? 'text-brand-accent' : 'text-white'}`}>
-                    {row.displayName}
+                    {displayName}
                     {isMe && <span className="text-xs ml-1 font-normal opacity-60">(you)</span>}
                   </span>
                 </div>

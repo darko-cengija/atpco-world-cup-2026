@@ -291,98 +291,104 @@ export default function PlayersAndTeams() {
 
       {/* Player rows */}
       <div className="space-y-4">
-        {rows.map((row, i) => (
-          <motion.div
-            key={row.user.uid}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.05 }}
-            className="bg-brand-card border border-brand-border rounded-xl p-4"
-          >
-            {/* Player header */}
-            <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-full bg-brand-border flex items-center justify-center overflow-hidden shrink-0">
-                {row.user.avatarUrl?.startsWith('emoji:') ? (
-                  <span className="text-lg">{row.user.avatarUrl.replace('emoji:', '')}</span>
-                ) : row.user.avatarUrl ? (
-                  <img src={row.user.avatarUrl} alt={row.user.displayName} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-sm font-bold text-brand-accent">
-                    {row.user.displayName?.[0]?.toUpperCase() ?? '?'}
-                  </span>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <span className="font-semibold text-white">{row.user.displayName}</span>
-                <span className="text-xs text-gray-500 ml-2">
-                  {row.teams.length}/{config.teamsPerPlayer ?? row.teams.length} teams
-                </span>
-              </div>
+        {rows.map((row, i) => {
+            const isMe = row.user.uid === user?.uid
+            const displayName = isMe ? user?.displayName ?? row.user.displayName : row.user.displayName
+            const avatarUrl = isMe ? user?.avatarUrl ?? row.user.avatarUrl : row.user.avatarUrl
 
-              {/* Admin delete — not shown for self */}
-              {isAdmin && row.user.uid !== user?.uid && (
-                confirmDeleteUid === row.user.uid ? (
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-xs text-gray-400">Delete?</span>
-                    <button
-                      onClick={() => deletePlayer(row.user)}
-                      disabled={deletingUid === row.user.uid}
-                      className="text-xs font-semibold text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
-                    >
-                      {deletingUid === row.user.uid ? '...' : 'Yes'}
-                    </button>
-                    <button
-                      onClick={() => setConfirmDeleteUid(null)}
-                      className="text-xs font-semibold text-gray-500 hover:text-gray-300 transition-colors"
-                    >
-                      No
-                    </button>
+            return (
+              <motion.div
+                key={row.user.uid}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className="bg-brand-card border border-brand-border rounded-xl p-4"
+              >
+                {/* Player header */}
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-9 h-9 rounded-full bg-brand-border flex items-center justify-center overflow-hidden shrink-0">
+                    {avatarUrl?.startsWith('emoji:') ? (
+                      <span className="text-lg">{avatarUrl.replace('emoji:', '')}</span>
+                    ) : avatarUrl ? (
+                      <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-sm font-bold text-brand-accent">
+                        {displayName?.[0]?.toUpperCase() ?? '?'}
+                      </span>
+                    )}
                   </div>
-                ) : (
-                  <button
-                    onClick={() => setConfirmDeleteUid(row.user.uid)}
-                    className="text-gray-600 hover:text-red-400 transition-colors shrink-0"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                )
-              )}
-            </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="font-semibold text-white">{displayName}</span>
+                    <span className="text-xs text-gray-500 ml-2">
+                      {row.teams.length}/{config.teamsPerPlayer ?? row.teams.length} teams
+                    </span>
+                  </div>
 
-            {/* Assigned teams */}
-            <div className="flex flex-wrap gap-2 mb-3">
-              {row.teams.length === 0 && (
-                <span className="text-xs text-gray-600 italic">No assigned teams</span>
-              )}
-              {row.teams.map((team) => (
-                <div
-                  key={team.id}
-                  className="flex items-center gap-1 bg-brand-bg border border-brand-border rounded-lg px-2 py-1"
-                >
-                  <span className="text-base">{team.flag}</span>
-                  <span className="text-xs text-gray-300">{getCountryName(team.name)}</span>
-                  {isAdmin && (
-                    <button
-                      onClick={() => removeTeam(row.user.uid, team.id)}
-                      className="ml-1 text-gray-600 hover:text-red-400 transition-colors"
-                    >
-                      <Minus size={12} />
-                    </button>
+                  {/* Admin delete — not shown for self */}
+                  {isAdmin && row.user.uid !== user?.uid && (
+                    confirmDeleteUid === row.user.uid ? (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-gray-400">Delete?</span>
+                        <button
+                          onClick={() => deletePlayer(row.user)}
+                          disabled={deletingUid === row.user.uid}
+                          className="text-xs font-semibold text-red-400 hover:text-red-300 transition-colors disabled:opacity-50"
+                        >
+                          {deletingUid === row.user.uid ? '...' : 'Yes'}
+                        </button>
+                        <button
+                          onClick={() => setConfirmDeleteUid(null)}
+                          className="text-xs font-semibold text-gray-500 hover:text-gray-300 transition-colors"
+                        >
+                          No
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmDeleteUid(row.user.uid)}
+                        className="text-gray-600 hover:text-red-400 transition-colors shrink-0"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    )
                   )}
                 </div>
-              ))}
-            </div>
 
-            {/* Admin: team picker */}
-            {isAdmin && (
-              <TeamPicker
-                allTeams={allTeams}
-                assignedTeamIds={row.teams.map((t) => t.id)}
-                onAdd={(team) => assignTeam(row.user.uid, team)}
-              />
-            )}
-          </motion.div>
-        ))}
+                {/* Assigned teams */}
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {row.teams.length === 0 && (
+                    <span className="text-xs text-gray-600 italic">No assigned teams</span>
+                  )}
+                  {row.teams.map((team) => (
+                    <div
+                      key={team.id}
+                      className="flex items-center gap-1 bg-brand-bg border border-brand-border rounded-lg px-2 py-1"
+                    >
+                      <span className="text-base">{team.flag}</span>
+                      <span className="text-xs text-gray-300">{getCountryName(team.name)}</span>
+                      {isAdmin && (
+                        <button
+                          onClick={() => removeTeam(row.user.uid, team.id)}
+                          className="ml-1 text-gray-600 hover:text-red-400 transition-colors"
+                        >
+                          <Minus size={12} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Admin: team picker */}
+                {isAdmin && (
+                  <TeamPicker
+                    allTeams={allTeams}
+                    assignedTeamIds={row.teams.map((t) => t.id)}
+                    onAdd={(team) => assignTeam(row.user.uid, team)}
+                  />
+                )}
+              </motion.div>
+            )
+          })}
       </div>
     </div>
     {showReplaceModal && (

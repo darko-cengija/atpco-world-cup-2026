@@ -110,6 +110,8 @@ export default function MainStandings() {
             <tbody>
               {standings.map((row, i) => {
                 const isMe = row.userId === user?.uid
+                const displayName = isMe ? user?.displayName ?? row.displayName : row.displayName
+                const avatarUrl = isMe ? user?.avatarUrl ?? row.avatarUrl : row.avatarUrl
                 return (
                   <tr
                     key={row.userId}
@@ -124,10 +126,10 @@ export default function MainStandings() {
                     {/* Player */}
                     <td className="pl-1 pr-2 py-3 max-w-[150px]">
                       <div className="flex items-center gap-2 min-w-0">
-                        <Avatar url={row.avatarUrl} name={row.displayName} className="w-7 h-7" />
+                        <Avatar url={avatarUrl} name={displayName} className="w-7 h-7" />
                         <div className="flex flex-col min-w-0">
                           <span className={`text-sm font-semibold truncate ${isMe ? 'text-brand-accent' : 'text-white'}`}>
-                            {row.displayName}
+                            {displayName}
                             {isMe && <span className="text-xs ml-1 font-normal opacity-60">(you)</span>}
                           </span>
                           <span className="text-[10px] text-gray-500 truncate">
@@ -217,6 +219,8 @@ export default function MainStandings() {
                 <tbody>
                   {chances.map((row) => {
                     const isMe = row.userId === user?.uid
+                    const displayName = isMe ? user?.displayName ?? row.displayName : row.displayName
+                    const avatarUrl = isMe ? user?.avatarUrl ?? row.avatarUrl : row.avatarUrl
                     return (
                       <tr
                         key={row.userId}
@@ -231,9 +235,9 @@ export default function MainStandings() {
                       >
                         <td className="pl-3 pr-2 py-3">
                           <div className="flex items-center gap-2 min-w-0">
-                            <Avatar url={row.avatarUrl} name={row.displayName} className="w-7 h-7" />
+                            <Avatar url={avatarUrl} name={displayName} className="w-7 h-7" />
                             <span className={`text-sm font-semibold truncate ${isMe ? 'text-brand-accent' : 'text-white'}`}>
-                              {row.displayName}
+                              {displayName}
                               {isMe && <span className="text-xs ml-1 font-normal opacity-60">(you)</span>}
                             </span>
                           </div>

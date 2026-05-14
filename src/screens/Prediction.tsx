@@ -17,6 +17,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/firebase'
 import { useAuth } from '@/contexts/AuthContext'
+import { Avatar } from '@/components/Avatar'
 import { getCountryName } from '@/lib/translations'
 import { HOME_MATCH_WINDOW } from '@/lib/config'
 import type { Match, Prediction, AppUser, PredictionOutcome } from '@/types'
@@ -316,50 +317,32 @@ export default function Prediction() {
               Everyone's Predictions
             </h2>
             <div className="space-y-2">
-              {allPredictions.map((p) => (
-                <div
-                  key={p.id}
-                  className={`flex items-center justify-between bg-brand-card border rounded-lg px-4 py-3 ${
-                    p.userId === user?.uid ? 'border-brand-accent/50' : 'border-brand-border'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar url={p.avatarUrl} name={p.displayName} size={8} />
-                    <span className="text-sm font-medium text-white">
-                      {p.userId === user?.uid ? `${p.displayName} (you)` : p.displayName}
-                    </span>
+              {allPredictions.map((p) => {
+                const isMe = p.userId === user?.uid
+                const displayName = isMe ? user?.displayName ?? p.displayName : p.displayName
+                const avatarUrl = isMe ? user?.avatarUrl ?? p.avatarUrl : p.avatarUrl
+
+                return (
+                  <div
+                    key={p.id}
+                    className={`flex items-center justify-between bg-brand-card border rounded-lg px-4 py-3 ${
+                      isMe ? 'border-brand-accent/50' : 'border-brand-border'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar url={avatarUrl} name={displayName} className="w-8 h-8" />
+                      <span className="text-sm font-medium text-white">
+                        {isMe ? `${displayName} (you)` : displayName}
+                      </span>
+                    </div>
+                    <span className="font-bold text-white text-base">{p.outcome}</span>
                   </div>
-                  <span className="font-bold text-white text-base">{p.outcome}</span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
       </div>
-    </div>
-  )
-}
-
-function Avatar({
-  url,
-  name,
-  size,
-}: {
-  url: string | null
-  name: string
-  size: number
-}) {
-  return (
-    <div
-      className={`w-${size} h-${size} rounded-full bg-brand-border flex items-center justify-center overflow-hidden`}
-    >
-      {url?.startsWith('emoji:') ? (
-        <span className="text-lg">{url.replace('emoji:', '')}</span>
-      ) : url ? (
-        <img src={url} alt={name} className="w-full h-full object-cover" />
-      ) : (
-        <span className="text-xs font-bold text-brand-accent">{name[0]?.toUpperCase()}</span>
-      )}
     </div>
   )
 }

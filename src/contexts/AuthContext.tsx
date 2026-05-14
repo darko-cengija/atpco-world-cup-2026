@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (fbUser) {
           setFirebaseUser(fbUser)
           const appUser = await syncCurrentUser(fbUser)
-          setUser(appUser)
+          setUser(withEffectiveAvatar(appUser, fbUser))
           setAuthError(null)
         } else {
           setFirebaseUser(null)
@@ -73,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (cancelled) return
 
         setFirebaseUser(result.user)
-        setUser(appUser)
+        setUser(withEffectiveAvatar(appUser, result.user))
         setAuthError(null)
       } catch (err) {
         console.error(err)
@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await signInWithPopup(auth, googleProvider)
       const appUser = await syncCurrentUser(result.user)
       setFirebaseUser(result.user)
-      setUser(appUser)
+      setUser(withEffectiveAvatar(appUser, result.user))
       setAuthError(null)
       return {}
     } catch (err) {
@@ -130,7 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthError(null)
       const callable = httpsCallable(functions, 'updateCurrentUserProfile')
       const result = await callable(profile)
-      setUser(result.data as AppUser)
+      setUser(withEffectiveAvatar(result.data as AppUser, auth.currentUser))
       return {}
     } catch (err) {
       console.error(err)
@@ -147,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function refreshUser() {
     if (!firebaseUser) return
     const snap = await getDoc(doc(db, 'users', firebaseUser.uid))
-    if (snap.exists()) setUser(snap.data() as AppUser)
+    if (snap.exists()) setUser(withEffectiveAvatar(snap.data() as AppUser, firebaseUser))
   }
 
   return (
@@ -184,6 +184,17 @@ async function syncCurrentUser(fbUser: FirebaseUser): Promise<AppUser> {
     photoURL: fbUser.photoURL,
   })
   return result.data as AppUser
+}
+
+function withEffectiveAvatar(appUser: AppUser, fbUser: FirebaseUser | null): AppUser {
+  const savedAvatar = typeof appUser.avatarUrl === 'string' && appUser.avatarUrl.trim()
+    ? appUser.avatarUrl
+    : null
+
+  return {
+    ...appUser,
+    avatarUrl: savedAvatar ?? fbUser?.photoURL ?? null,
+  }
 }
 
 function shouldUseRedirectSignIn() {
