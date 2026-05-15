@@ -61,7 +61,7 @@ export function ReactionPicker({ rect, onSelect, onClose }: Props) {
               <button
                 key={emoji}
                 onClick={(e) => { e.stopPropagation(); onSelect(emoji) }}
-                className="text-2xl w-10 h-10 flex items-center justify-center rounded-full active:bg-brand-border active:scale-90 transition-transform"
+                className="text-2xl w-10 h-10 flex items-center justify-center rounded-full active:bg-brand-stamp/10 active:scale-90 transition-transform"
               >
                 {emoji}
               </button>
@@ -69,7 +69,7 @@ export function ReactionPicker({ rect, onSelect, onClose }: Props) {
             <button
               onClick={(e) => { e.stopPropagation(); expandPicker() }}
               aria-label="More reactions"
-              className="w-10 h-10 flex items-center justify-center rounded-full text-gray-400 active:bg-brand-border transition-colors"
+              className="w-10 h-10 flex items-center justify-center rounded-full text-brand-muted active:bg-brand-stamp/10 transition-colors"
             >
               <MoreHorizontal size={22} />
             </button>
@@ -80,7 +80,7 @@ export function ReactionPicker({ rect, onSelect, onClose }: Props) {
               <button
                 key={emoji}
                 onClick={(e) => { e.stopPropagation(); onSelect(emoji) }}
-                className="text-2xl w-10 h-10 flex items-center justify-center rounded-full active:bg-brand-border active:scale-90 transition-transform"
+                className="text-2xl w-10 h-10 flex items-center justify-center rounded-full active:bg-brand-stamp/10 active:scale-90 transition-transform"
               >
                 {emoji}
               </button>

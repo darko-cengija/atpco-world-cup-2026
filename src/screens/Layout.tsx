@@ -3,6 +3,7 @@ import { Home, Trophy, Target, Users, MessageCircle, ListOrdered, Shuffle } from
 import { useAuth } from '@/contexts/AuthContext'
 import { useUnreadChat } from '@/hooks/useUnreadChat'
 import { useDrawConfig } from '@/hooks/useDrawConfig'
+import { TicketMark } from '@/components/TicketMark'
 
 const liveNavItems = [
   { to: '/', icon: Home, label: 'Home', exact: true },
@@ -34,23 +35,24 @@ export default function Layout() {
   return (
     <div className="flex flex-col min-h-screen bg-brand-bg">
       {/* Top bar */}
-      <header className="px-6 pt-10 pb-4 flex items-center justify-between">
+      <header className="px-5 pt-8 pb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="" className="w-7 h-7 rounded-md" aria-hidden="true" />
-          <span className="text-xs text-gray-500 font-medium tracking-widest uppercase">
-            World Cup 26
-          </span>
+          <TicketMark className="h-10 w-10" />
+          <div>
+            <p className="ticket-meta">Pool · admit one</p>
+            <p className="font-display text-base leading-none text-brand-ink">World Cup 26</p>
+          </div>
         </div>
         <NavLink
           to="/profile"
-          className="w-8 h-8 rounded-full bg-brand-card border border-brand-border overflow-hidden flex items-center justify-center"
+          className="w-9 h-9 rounded-full bg-brand-ink text-brand-ticket ring-2 ring-brand-paper overflow-hidden flex items-center justify-center shadow-sm"
         >
           {avatarUrl?.startsWith('emoji:') ? (
             <span className="text-lg">{avatarUrl.replace('emoji:', '')}</span>
           ) : avatarUrl ? (
             <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-sm font-bold text-brand-accent">
+            <span className="text-sm font-bold text-brand-ticket">
               {user?.displayName?.[0]?.toUpperCase() ?? '?'}
             </span>
           )}
@@ -63,7 +65,7 @@ export default function Layout() {
       </main>
 
       {/* Bottom navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-brand-card border-t border-brand-border px-2 pb-safe">
+      <nav className="fixed bottom-0 left-0 right-0 bg-brand-bg border-t border-brand-border px-2 pb-safe">
         <div className="flex">
           {navItems.map(({ to, icon: Icon, label, exact }) => (
             <NavLink
@@ -71,8 +73,8 @@ export default function Layout() {
               to={to}
               end={exact}
               className={({ isActive }) =>
-                `flex-1 flex flex-col items-center gap-1 py-3 text-xs font-medium transition-colors ${
-                  isActive ? 'text-brand-accent' : 'text-gray-500'
+                `relative flex-1 flex flex-col items-center gap-1 py-3 font-mono text-[9px] uppercase tracking-[0.12em] transition-colors after:absolute after:bottom-1 after:left-1/2 after:h-0.5 after:w-4 after:-translate-x-1/2 after:bg-current ${
+                  isActive ? 'text-brand-stamp after:opacity-100' : 'text-brand-muted after:opacity-0'
                 }`
               }
             >
@@ -80,13 +82,13 @@ export default function Layout() {
                 <Icon size={22} />
 
                 {to === '/chat' && mentionCount > 0 && (
-                  <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 bg-red-500 rounded-full text-white text-[9px] font-bold flex items-center justify-center px-1 leading-none">
+                  <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 bg-brand-stamp rounded-full text-brand-ticket text-[9px] font-bold flex items-center justify-center px-1 leading-none ring-2 ring-brand-paper">
                     {mentionCount > 99 ? '99+' : mentionCount}
                   </span>
                 )}
 
                 {to === '/chat' && mentionCount === 0 && unreadCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border border-brand-card" />
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-brand-stamp rounded-full ring-2 ring-brand-paper" />
                 )}
               </div>
               {label}

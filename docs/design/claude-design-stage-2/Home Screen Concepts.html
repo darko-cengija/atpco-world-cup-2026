@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>World Cup 26 — Home Screen Concepts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Serif+Display:ital@0;1&family=Inter+Tight:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  * { box-sizing: border-box; }
+
+  /* Notes panel within an artboard */
+  .notes { padding: 22px 22px 28px; background: #fffbf2;
+    border: 1px solid rgba(0,0,0,0.06); border-radius: 16px;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.05); }
+  .notes h3 { font-family: 'Instrument Serif', serif; font-style: italic;
+    font-size: 22px; margin: 0 0 6px; letter-spacing: -0.2px; color: #1b1a17; }
+  .notes .name { font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+    font-size: 28px; font-weight: 700; letter-spacing: -0.8px;
+    color: #1b1a17; line-height: 1; margin: 6px 0 12px; }
+  .notes p { font-size: 13px; line-height: 1.55; color: rgba(0,0,0,0.7);
+    margin: 0 0 12px; }
+  .notes h4 { font-family: 'Inter Tight', system-ui, sans-serif;
+    font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase;
+    color: rgba(0,0,0,0.5); margin: 18px 0 6px; font-weight: 700; }
+  .notes ul { padding-left: 16px; margin: 0 0 12px; }
+  .notes li { font-size: 12px; line-height: 1.5; color: rgba(0,0,0,0.7);
+    margin: 0 0 4px; }
+  .notes li strong { color: #1b1a17; font-weight: 600; }
+  .swatches { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0 8px; }
+  .swatch { width: 28px; height: 28px; border-radius: 8px;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06); position: relative;
+    flex-shrink: 0; }
+  .swatch::after { content: attr(data-l); position: absolute; left: 34px;
+    top: 50%; transform: translateY(-50%); font-size: 11px;
+    color: rgba(0,0,0,0.55); white-space: nowrap; }
+  .swatchrow { display: flex; flex-direction: column; gap: 8px;
+    margin-bottom: 10px; }
+  .swatchrow .swatch { width: 22px; height: 22px; }
+  .swatchrow .row { display: flex; align-items: center; gap: 10px; }
+  .swatchrow .row .lbl { font-size: 11.5px; color: rgba(0,0,0,0.6); }
+  .tokens { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 14px;
+    font-size: 11.5px; color: rgba(0,0,0,0.7); }
+  .tokens .k { color: rgba(0,0,0,0.5); }
+  .tokens .v { font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 11px; color: #1b1a17; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="shared.jsx"></script>
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="concept-editorial.jsx"></script>
+<script type="text/babel" src="concept-pop.jsx"></script>
+<script type="text/babel" src="concept-ticket.jsx"></script>
+<script type="text/babel" src="concept-minimal.jsx"></script>
+
+<script type="text/babel">
+const Swatch = ({ c, l }) => (
+  <div className="row">
+    <div className="swatch" style={{ background: c }} />
+    <span className="lbl"><strong style={{ color:'#1b1a17' }}>{l}</strong> {c}</span>
+  </div>
+);
+
+function Notes({ id, name, idea, why, palette, type, radii, shadow, btn, card, nav, components }) {
+  return (
+    <div className="notes">
+      <h3>Concept {id}</h3>
+      <div className="name">{name}</div>
+      <p>{idea}</p>
+
+      <h4>Why it's different</h4>
+      <p style={{ margin: 0 }}>{why}</p>
+
+      <h4>Palette</h4>
+      <div className="swatchrow">
+        {palette.map(([c, l]) => <Swatch key={c} c={c} l={l} />)}
+      </div>
+
+      <h4>Typography</h4>
+      <div className="tokens">
+        {type.map(([k, v]) => (
+          <React.Fragment key={k}>
+            <span className="k">{k}</span><span className="v">{v}</span>
+          </React.Fragment>
+        ))}
+      </div>
+
+      <h4>Tokens</h4>
+      <div className="tokens">
+        <span className="k">radius</span><span className="v">{radii}</span>
+        <span className="k">elevation</span><span className="v">{shadow}</span>
+        <span className="k">button</span><span className="v">{btn}</span>
+        <span className="k">card</span><span className="v">{card}</span>
+        <span className="k">nav</span><span className="v">{nav}</span>
+      </div>
+
+      <h4>Reusable components</h4>
+      <ul>
+        {components.map(c => <li key={c}><strong>{c.split(' — ')[0]}</strong>{c.includes(' — ') ? ' — ' + c.split(' — ')[1] : ''}</li>)}
+      </ul>
+    </div>
+  );
+}
+
+const CONCEPTS = [
+  {
+    id: '1',
+    name: 'Editorial Bold',
+    Comp: ConceptEditorial,
+    idea: 'A newspaper sports-section take. Warm paper, deep ink, ember accent, big italic serif against a tight sans. Each match is a typographic spread with a giant day numeral, hairline rules, and quietly stamped owner credits.',
+    why: 'The only concept built on editorial / print typography (display serif + monospace dates + hairline rules) — every other direction leans on rounded cards and sans-serif. Reads slow and considered, not app-like.',
+    palette: [
+      ['#f3ede1', 'Paper'],
+      ['#1a1815', 'Ink'],
+      ['#c8362b', 'Ember accent'],
+    ],
+    type: [
+      ['Display', 'Instrument Serif Italic, 56–22'],
+      ['Body', 'Inter Tight, 13/11'],
+      ['Numerals', 'JetBrains Mono, 11/10.5'],
+    ],
+    radii: '2–8 px (sharp)',
+    shadow: 'none, hairlines only',
+    btn: 'Ink fill, 2px radius, uppercase 1.4 tracking',
+    card: 'No card; rule-divided rows',
+    nav: 'Ink+line glyph, ember rule above active',
+    components: [
+      'TypographicMatchRow — day numeral + venue + ruled CTA',
+      'SectionRule — labeled hairline divider ("ARCHIVE")',
+      'EditorialButton — fill / outline / inline link variants',
+      'OwnerCredit — italic small-caps under team name',
+    ],
+  },
+  {
+    id: '2',
+    name: 'Playful Pop',
+    Comp: ConceptPop,
+    idea: 'Optimistic and social. Round flag chips become the heroes, cards float on a warm cream, the accent tomato pops the primary CTA. Chunky pills, a navy nav with a tomato active capsule, and friendly bricolage display type.',
+    why: 'Highest visual energy. Circular flags + chunky pill controls + drop-shadow buttons read as fun & friendly. Color does most of the work — the only direction where the flags themselves frame the matchup.',
+    palette: [
+      ['#FFF6E7', 'Cream bg'],
+      ['#0E2342', 'Navy text'],
+      ['#FF4F3A', 'Tomato accent'],
+      ['#FFC53D', 'Sun'],
+    ],
+    type: [
+      ['Display', 'Bricolage Grotesque, 38'],
+      ['Body', 'Inter Tight, 12–14'],
+      ['Caps', 'Inter Tight 700 / 0.8 letter'],
+    ],
+    radii: '14 / 18 / 24 px',
+    shadow: '0 6px 18px rgba(14,35,66,0.07); 0 4px 0 navy on buttons',
+    btn: 'Filled tomato, 16r, navy hard-shadow',
+    card: 'White, 24r, soft drop shadow',
+    nav: 'Floating navy capsule, active = tomato pill',
+    components: [
+      'MatchCard — rounded card with VS roundel',
+      'FlagChip — circular ring-framed flag',
+      'PoolPill — count chip (navy / cream variants)',
+      'PrimaryCTA — hard-shadow button (3 colors)',
+      'NavCapsule — floating bottom nav',
+    ],
+  },
+  {
+    id: '3',
+    name: 'Match Ticket',
+    Comp: ConceptTicket,
+    idea: 'Every match is a paper ticket stub: kraft outer, cream ticket body, perforation notches, dashed tear line, monospace match codes and stamped CTAs. Tactile, collectible, sport-archival.',
+    why: 'The only concept with a strong physical metaphor (ticket / stub). Uses paper texture, rotation, dashed dividers, and monospace metadata in a way none of the others do — feels like a keepsake, not a feed.',
+    palette: [
+      ['#e6dcc5', 'Kraft outer'],
+      ['#f6efdb', 'Ticket cream'],
+      ['#0f3a35', 'Teal ink'],
+      ['#a8392b', 'Stamp red'],
+    ],
+    type: [
+      ['Display', 'DM Serif Display, 42/22'],
+      ['Body', 'Inter Tight, 13/11'],
+      ['Metadata', 'JetBrains Mono, 10/9'],
+    ],
+    radii: '12 / 16 px ticket; 3–4 px stamps',
+    shadow: 'soft warm 0 8px 22px rgba(50,30,10,.10)',
+    btn: 'Ink stamp + monospace caps; outlined edit',
+    card: 'Cream ticket, dashed tear, edge notches',
+    nav: 'Paper bar, stamp-red underline on active',
+    components: [
+      'TicketCard — paper card with notches + dashed tear',
+      'StampLabel — small uppercase mono metadata block',
+      'StampedCTA — primary action styled as ink stamp',
+      'PredictedBadge — rotated outlined stamp',
+      'PaperTextureBg — dotted grain layer',
+    ],
+  },
+  {
+    id: '4',
+    name: 'Minimal Calendar',
+    Comp: ConceptMinimal,
+    idea: 'A calm calendar agenda. Day-grouped with sticky headers, matches as stacked rows (time first, then home/away as agenda items). Helvetica + tabular monospace times + one electric indigo accent.',
+    why: 'Lowest visual density of the four — no rounded cards, no decoration, no color story. Time is the primary axis. Best for power users who want to scan a packed day quickly; closest in spirit to Linear / Things.',
+    palette: [
+      ['#fafaf7', 'Bg'],
+      ['#ffffff', 'Surface'],
+      ['#111111', 'Ink'],
+      ['#5b3df5', 'Electric indigo'],
+    ],
+    type: [
+      ['Display', 'Helvetica Neue 700, 30'],
+      ['Body', 'Helvetica Neue, 13/11'],
+      ['Numerals', 'JetBrains Mono tabular, 22/13'],
+    ],
+    radii: '4 / 8 px',
+    shadow: 'none — hairline borders only',
+    btn: 'Ink-fill 8r; tertiary = accent text-link',
+    card: 'Flat surface rows, hairline dividers',
+    nav: 'Flat white bar, indigo dot under active',
+    components: [
+      'StickyDayHeader — date + year, sticks on scroll',
+      'AgendaMatchRow — time-led row with stacked teams',
+      'MetricBar — 3-up tabular summary',
+      'PrimaryAction — full-width 8r button',
+      'MutedTag — "NEW" pill in accent color',
+    ],
+  },
+];
+
+function App() {
+  return (
+    <DesignCanvas>
+      <DCSection
+        id="concepts"
+        title="World Cup 26 — Home screen"
+        subtitle="Four directions for a private prediction pool. Same content, distinct design systems.">
+        {CONCEPTS.map(c => (
+          <DCArtboard
+            key={c.id}
+            id={`concept-${c.id}`}
+            label={`${c.id} · ${c.name}`}
+            width={420}
+            height={874}>
+            <div style={{
+              width: '100%', height: '100%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: '#f0eee9',
+            }}>
+              <c.Comp />
+            </div>
+          </DCArtboard>
+        ))}
+      </DCSection>
+
+      <DCSection
+        id="notes"
+        title="Concept notes & tokens"
+        subtitle="Materially different visuals, layouts and metaphors. Reusable component ideas for the future design system.">
+        {CONCEPTS.map(c => (
+          <DCArtboard
+            key={c.id}
+            id={`notes-${c.id}`}
+            label={`${c.id} · notes`}
+            width={420}
+            height={874}>
+            <Notes {...c} />
+          </DCArtboard>
+        ))}
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

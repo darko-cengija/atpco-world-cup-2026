@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>World Cup 26 — Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Serif+Display:ital@0;1&family=Inter+Tight:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #f0eee9; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  * { box-sizing: border-box; }
+  input::placeholder { color: rgba(15,58,53,0.45); }
+  @keyframes tkSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  @keyframes tkPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.55; } }
+  @keyframes tkSlide {
+    0%   { left: -40%; }
+    100% { left: 100%; }
+  }
+
+  /* Reusable board chrome — cream paper card for displaying components */
+  .board {
+    background: #f6efdb;
+    background-image: radial-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
+                      radial-gradient(rgba(0,0,0,0.025) 1px, transparent 1px);
+    background-size: 3px 3px, 7px 7px;
+    background-position: 0 0, 1.5px 1.5px;
+    border-radius: 14px;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.05), 0 8px 22px rgba(50,30,10,0.10);
+    padding: 22px;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .board.paper {
+    background-color: #e6dcc5;
+  }
+  .board-eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10px; letter-spacing: 1.6px; text-transform: uppercase;
+    color: rgba(15,58,53,0.5); font-weight: 600;
+  }
+  .board-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px; letter-spacing: -0.3px; color: #0f3a35;
+    line-height: 1.05; margin-top: 4px;
+  }
+  .board-divider {
+    height: 1px; border: none; border-top: 1px dashed rgba(15,58,53,0.2);
+    margin: 14px 0 16px;
+  }
+  .row-label {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9px; letter-spacing: 1.4px; text-transform: uppercase;
+    color: rgba(15,58,53,0.5); margin-bottom: 8px; font-weight: 600;
+  }
+  .stack > * + * { margin-top: 14px; }
+  .cluster { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .vstack { display: flex; flex-direction: column; gap: 12px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+  /* Token tables */
+  .tokens-table {
+    width: 100%; font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10.5px; color: #0f3a35;
+    border-collapse: collapse;
+  }
+  .tokens-table td { padding: 6px 0; vertical-align: middle; }
+  .tokens-table td:first-child {
+    color: rgba(15,58,53,0.55); letter-spacing: 0.8px;
+    text-transform: uppercase; font-size: 9px; width: 38%;
+  }
+  .swatch-row { display: flex; align-items: center; gap: 12px; padding: 6px 0; }
+  .swatch-sq {
+    width: 28px; height: 28px; border-radius: 4px;
+    box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.1);
+    flex-shrink: 0;
+  }
+  .swatch-name {
+    font-family: 'Inter Tight', system-ui, sans-serif;
+    font-size: 12px; color: #0f3a35; font-weight: 600;
+  }
+  .swatch-hex {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10px; color: rgba(15,58,53,0.55); margin-left: auto;
+  }
+
+  /* Specimens for spacing / radii / shadow */
+  .spec-box {
+    background: #f6efdb;
+    border: 1px solid rgba(15,58,53,0.18);
+  }
+  .scale-row { display: flex; align-items: flex-end; gap: 12px; }
+  .scale-cell {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    color: #0f3a35;
+  }
+  .scale-cell .lbl {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9px; letter-spacing: 0.6px;
+    color: rgba(15,58,53,0.55);
+  }
+
+  /* Caption beneath an artboard's body */
+  .cap {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase;
+    color: rgba(15,58,53,0.55); font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="shared.jsx"></script>
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="concept-ticket.jsx"></script>
+<script type="text/babel" src="ds-icons.jsx"></script>
+<script type="text/babel" src="ds-shell.jsx"></script>
+<script type="text/babel" src="ds-controls.jsx"></script>
+<script type="text/babel" src="ds-patterns.jsx"></script>
+<script type="text/babel" src="ds-final.jsx"></script>
+
+<script type="text/babel" src="ds-app.jsx"></script>
+</body>
+</html>

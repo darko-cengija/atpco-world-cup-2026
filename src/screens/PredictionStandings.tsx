@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Avatar } from '@/components/Avatar'
 import { actualOutcome, applyPredictionScore } from '@/lib/predictions'
 import type { PredictionStanding } from '@/types'
+import { TicketSpinner } from '@/components/TicketMark'
 
 const compareNames = (a: string, b: string) =>
   a.localeCompare(b, 'en', { sensitivity: 'base' })
@@ -124,23 +125,24 @@ export default function PredictionStandings() {
 
   return (
     <div className="px-4 py-2">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Prediction Standings</h1>
-        <p className="text-gray-400 text-sm mt-1">Prediction points</p>
+      <div className="mb-6 px-1">
+        <p className="ticket-meta text-brand-stamp">★ Prediction pool</p>
+        <h1 className="font-display text-[2.2rem] leading-none text-brand-ink">Prediction Standings</h1>
+        <p className="text-brand-muted text-sm mt-1">Prediction points</p>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="w-8 h-8 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
+          <TicketSpinner label="Scoring" />
         </div>
       ) : standings.length === 0 ? (
-        <p className="text-gray-500 text-center py-10">
+        <p className="rounded-xl border border-dashed border-brand-border text-brand-faint text-center py-10">
           No results yet. Predict outcomes to win points.
         </p>
       ) : (
-        <div className="bg-brand-card border border-brand-border rounded-xl overflow-hidden">
+        <div className="ticket-card">
           {/* Header */}
-          <div className="grid grid-cols-[2rem_1fr_3.5rem] px-4 py-2 border-b border-brand-border text-[10px] text-gray-500 uppercase tracking-wider font-medium">
+          <div className="grid grid-cols-[2rem_1fr_3.5rem] px-4 py-2 border-b border-brand-border ticket-meta">
             <span>#</span>
             <span>Player</span>
             <span className="text-right">Points</span>
@@ -158,17 +160,15 @@ export default function PredictionStandings() {
                   isMe ? 'bg-brand-accent/5' : ''
                 }`}
               >
-                <span className="text-sm font-bold">
-                  {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span className="text-gray-500">{i + 1}</span>}
-                </span>
+                <RankBadge rank={i + 1} />
                 <div className="flex items-center gap-2 min-w-0">
                   <Avatar url={avatarUrl} name={displayName} className="w-7 h-7" />
-                  <span className={`text-sm font-semibold truncate ${isMe ? 'text-brand-accent' : 'text-white'}`}>
+                  <span className={`font-display text-base leading-none truncate ${isMe ? 'text-brand-stamp' : 'text-brand-ink'}`}>
                     {displayName}
                     {isMe && <span className="text-xs ml-1 font-normal opacity-60">(you)</span>}
                   </span>
                 </div>
-                <span className={`text-right text-sm font-bold ${row.points < 0 ? 'text-red-400' : 'text-white'}`}>
+                <span className={`text-right font-mono text-sm font-bold tabular-nums ${row.points < 0 ? 'text-brand-stamp' : 'text-brand-ink'}`}>
                   {row.points.toFixed(2)}
                 </span>
               </div>
@@ -178,13 +178,26 @@ export default function PredictionStandings() {
       )}
 
       {!loading && playerCount > 0 && (
-        <ul className="mt-4 list-disc space-y-1 pl-5 text-left text-xs text-gray-600">
+        <ul className="mt-4 list-disc space-y-1 pl-5 text-left text-xs text-brand-faint">
           <li>
             A correct prediction earns {playerCount}/n points, where n is the number of players who got it right.
           </li>
-          <li>If you do not predict, you lose 1/{playerCount} points.</li>
+          <li>If you make no prediction for a match, you lose 1/{playerCount} points.</li>
         </ul>
       )}
     </div>
   )
+}
+
+function RankBadge({ rank }: { rank: number }) {
+  if (rank <= 3) {
+    const color = rank === 1
+      ? 'bg-[#cba14e] text-[#fff8e6]'
+      : rank === 2
+        ? 'bg-[#a9a9a9] text-[#f7f7f7]'
+        : 'bg-[#a06640] text-[#f5ecdc]'
+    return <span className={`grid h-6 w-6 place-items-center rounded-full font-display text-sm leading-none ${color}`}>{rank}</span>
+  }
+
+  return <span className="font-mono text-xs font-bold text-brand-muted">{String(rank).padStart(2, '0')}</span>
 }

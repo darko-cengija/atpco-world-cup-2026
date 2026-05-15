@@ -3,14 +3,33 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --ticket-paper: #e6dcc5;
+    --ticket-card: #f6efdb;
+    --ticket-ink: #0f3a35;
+    --ticket-ink-70: rgba(15, 58, 53, 0.7);
+    --ticket-ink-50: rgba(15, 58, 53, 0.5);
+    --ticket-ink-20: rgba(15, 58, 53, 0.2);
+    --ticket-stamp: #a8392b;
+    --ticket-stamp-ink: #7a2b20;
+    --ticket-gold: #b3892e;
+    --ticket-success: #1f6a4d;
+    --ticket-paper-texture:
+      radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+      radial-gradient(rgba(0, 0, 0, 0.025) 1px, transparent 1px);
+  }
+
   * {
     box-sizing: border-box;
   }
 
   body {
-    background-color: #0a1628;
-    color: #ffffff;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--ticket-paper);
+    background-image: var(--ticket-paper-texture);
+    background-size: 3px 3px, 7px 7px;
+    background-position: 0 0, 1.5px 1.5px;
+    color: var(--ticket-ink);
+    font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     /* Prevent overscroll bounce on iOS */
@@ -22,11 +41,229 @@
     max-width: 430px;
     margin: 0 auto;
     position: relative;
+    background-color: var(--ticket-paper);
+    background-image: var(--ticket-paper-texture);
+    background-size: 3px 3px, 7px 7px;
+    background-position: 0 0, 1.5px 1.5px;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: "DM Serif Display", "Times New Roman", serif;
+    letter-spacing: 0;
+    text-wrap: pretty;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  input,
+  textarea,
+  select {
+    color: var(--ticket-ink);
   }
 
   @media (orientation: landscape) {
     #root {
       max-width: 560px;
     }
+  }
+}
+
+@layer components {
+  .ticket-card {
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid var(--ticket-ink-20);
+    background-color: var(--ticket-card);
+    background-image: var(--ticket-paper-texture);
+    background-size: 3px 3px, 7px 7px;
+    background-position: 0 0, 1.5px 1.5px;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.05), 0 8px 22px rgba(50, 30, 10, 0.1);
+  }
+
+  .ticket-tear {
+    position: relative;
+    height: 0;
+  }
+
+  .ticket-tear::before,
+  .ticket-tear::after {
+    content: "";
+    position: absolute;
+    top: -10px;
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    background: var(--ticket-paper);
+  }
+
+  .ticket-tear::before {
+    left: -10px;
+  }
+
+  .ticket-tear::after {
+    right: -10px;
+  }
+
+  .ticket-tear-line {
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    top: -1px;
+    border-top: 1.5px dashed var(--ticket-ink-20);
+  }
+
+  .ticket-meta {
+    font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.625rem;
+    line-height: 1.35;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ticket-ink-50);
+  }
+
+  .ticket-stamp {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--ticket-stamp);
+    border-radius: 3px;
+    color: var(--ticket-stamp);
+    font-family: "DM Serif Display", "Times New Roman", serif;
+    font-size: 0.875rem;
+    line-height: 1;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transform: rotate(-3deg);
+    padding: 0.375rem 0.625rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ticket-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid var(--ticket-ink-20);
+    border-radius: 999px;
+    color: var(--ticket-ink-70);
+    font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    line-height: 1.4;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+  }
+
+  .ticket-pill-stamp {
+    border-color: var(--ticket-stamp);
+    color: var(--ticket-stamp);
+    background: rgba(168, 57, 43, 0.1);
+  }
+
+  .ticket-button {
+    border-radius: 4px;
+    font-family: "JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+}
+
+@layer utilities {
+  .bg-brand-bg {
+    background-color: var(--ticket-paper) !important;
+    background-image: var(--ticket-paper-texture);
+    background-size: 3px 3px, 7px 7px;
+    background-position: 0 0, 1.5px 1.5px;
+  }
+
+  .bg-brand-card {
+    background-color: var(--ticket-card) !important;
+    background-image: var(--ticket-paper-texture);
+    background-size: 3px 3px, 7px 7px;
+    background-position: 0 0, 1.5px 1.5px;
+  }
+
+  .bg-brand-border {
+    background-color: var(--ticket-ink-20) !important;
+  }
+
+  .border-brand-border {
+    border-color: var(--ticket-ink-20) !important;
+  }
+
+  .bg-brand-accent {
+    background-color: var(--ticket-ink) !important;
+  }
+
+  .hover\:bg-brand-accent-hover:hover {
+    background-color: var(--ticket-stamp-ink) !important;
+  }
+
+  .text-brand-accent {
+    color: var(--ticket-stamp) !important;
+  }
+
+  .text-brand-bg {
+    color: var(--ticket-card) !important;
+  }
+
+  .text-white {
+    color: var(--ticket-ink) !important;
+  }
+
+  .text-gray-200,
+  .text-gray-300 {
+    color: var(--ticket-ink) !important;
+  }
+
+  .text-gray-400 {
+    color: var(--ticket-ink-70) !important;
+  }
+
+  .text-gray-500,
+  .text-gray-600 {
+    color: var(--ticket-ink-50) !important;
+  }
+
+  .text-gray-900 {
+    color: var(--ticket-ink) !important;
+  }
+
+  .bg-red-600.text-white,
+  .bg-red-500.text-white,
+  .bg-emerald-600.text-white,
+  .bg-emerald-500.text-white,
+  .bg-brand-accent.text-white,
+  .bg-brand-accent.text-brand-ink,
+  .bg-brand-accent .text-white {
+    color: var(--ticket-card) !important;
+  }
+
+  .bg-emerald-400.text-brand-bg {
+    color: var(--ticket-ink) !important;
+  }
+
+  .shadow-2xl,
+  .shadow-xl {
+    --tw-shadow-color: rgba(50, 30, 10, 0.18);
+  }
+}
+
+@keyframes tkPulse {
+  0%, 100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
   }
 }

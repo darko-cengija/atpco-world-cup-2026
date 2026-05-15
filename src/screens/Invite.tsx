@@ -165,29 +165,32 @@ export default function Invite() {
   return (
     <div className="min-h-screen bg-brand-bg">
       {toast && (
-        <div role="status" aria-live="polite" className="fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-brand-bg shadow-lg">
+        <div role="status" aria-live="polite" className="fixed left-1/2 top-4 z-50 -translate-x-1/2 rounded-md bg-brand-ink px-4 py-2 text-sm font-semibold text-brand-ticket shadow-lg">
           {toast}
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-10 pb-4">
-        <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-white transition-colors">
+      <div className="flex items-center gap-3 px-4 pt-8 pb-4">
+        <button onClick={() => navigate(-1)} className="grid h-9 w-9 place-items-center rounded-lg border border-brand-border text-brand-ink hover:border-brand-ink transition-colors">
           <ArrowLeft size={22} />
         </button>
-        <h1 className="text-lg font-bold text-white">Invites</h1>
+        <div>
+          <p className="ticket-meta">Admin</p>
+          <h1 className="font-display text-xl leading-none text-brand-ink">Invites</h1>
+        </div>
       </div>
 
       <div className="px-4 space-y-6 pb-10">
         {/* Add invite */}
-        <div className="bg-brand-card border border-brand-border rounded-xl p-4 space-y-3">
-          <p className="text-xs text-gray-500 uppercase tracking-wider">Invite player</p>
+        <div className="ticket-card p-4 space-y-3">
+          <p className="ticket-meta">Invite player</p>
           <input
             type="text"
             value={nameInput}
             onChange={(e) => { setNameInput(e.target.value); setError(null) }}
             placeholder="App name (e.g. Che)"
-            className="w-full bg-brand-bg border border-brand-border rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-brand-accent transition-colors text-sm"
+            className="w-full bg-brand-card border border-brand-border rounded px-4 py-3 text-brand-ink placeholder-brand-faint focus:outline-none focus:border-brand-ink transition-colors text-sm"
           />
           <div className="flex gap-2">
             <input
@@ -196,23 +199,23 @@ export default function Invite() {
               onChange={(e) => { setEmailInput(e.target.value); setError(null) }}
               onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
               placeholder="ime@gmail.com"
-              className="flex-1 bg-brand-bg border border-brand-border rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-brand-accent transition-colors text-sm"
+              className="flex-1 bg-brand-card border border-brand-border rounded px-4 py-3 text-brand-ink placeholder-brand-faint focus:outline-none focus:border-brand-ink transition-colors text-sm"
             />
             <button
               onClick={handleAdd}
               disabled={adding || !emailInput.trim()}
-              className="flex items-center gap-2 px-4 py-3 bg-brand-accent text-brand-bg rounded-xl font-semibold text-sm hover:bg-brand-accent-hover transition-colors disabled:opacity-50 whitespace-nowrap"
+              className="ticket-button flex items-center gap-2 px-4 py-3 bg-brand-accent text-brand-bg rounded hover:bg-brand-accent-hover transition-colors disabled:opacity-50 whitespace-nowrap"
             >
               <UserPlus size={16} />
               Invite
             </button>
           </div>
-          {error && <p className="text-xs text-red-400">{error}</p>}
+          {error && <p className="text-xs text-brand-stamp">{error}</p>}
         </div>
 
         {/* Invite list */}
         <div>
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-3">
+          <p className="ticket-meta mb-3">
             Invited ({invites.length})
           </p>
 
@@ -221,13 +224,13 @@ export default function Invite() {
               <div className="w-6 h-6 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
             </div>
           ) : invites.length === 0 ? (
-            <p className="text-gray-600 text-sm text-center py-8">No one has been invited yet.</p>
+            <p className="text-brand-faint text-sm text-center py-8">No one has been invited yet.</p>
           ) : (
             <div className="space-y-2">
               {invites.map((invite) => (
                 <div
                   key={invite.id}
-                  className="flex items-center justify-between bg-brand-card border border-brand-border rounded-xl px-4 py-3"
+                  className="ticket-card flex items-center justify-between px-4 py-3"
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     {invite.joined ? (
@@ -237,12 +240,12 @@ export default function Invite() {
                     )}
                     <div className="min-w-0">
                       {invite.name ? (
-                        <p className="text-sm font-semibold text-white truncate">{invite.name}</p>
+                        <p className="font-display text-base leading-none text-brand-ink truncate">{invite.name}</p>
                       ) : null}
-                      <p className={`text-xs truncate ${invite.name ? 'text-gray-500' : 'text-sm text-white'}`}>
+                      <p className={`text-xs truncate ${invite.name ? 'text-brand-faint' : 'text-sm text-brand-ink'}`}>
                         {invite.email}
                       </p>
-                      <p className={`text-xs ${invite.joined ? 'text-emerald-400' : 'text-gray-500'}`}>
+                      <p className={`text-xs ${invite.joined ? 'text-emerald-700' : 'text-brand-faint'}`}>
                         {inviteStatus(invite)}
                       </p>
                     </div>

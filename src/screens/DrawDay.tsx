@@ -15,6 +15,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useDrawConfig } from '@/hooks/useDrawConfig'
 import { getCountryName } from '@/lib/translations'
 import type { AppUser, DrawAssignment, DrawState, Team } from '@/types'
+import { TicketSpinner } from '@/components/TicketMark'
 
 const PICKER_ROW_HEIGHT = 44
 const PICKER_VISIBLE_ROWS = 5
@@ -251,7 +252,7 @@ export default function DrawDay() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
+        <TicketSpinner label="Loading draw" />
       </div>
     )
   }
@@ -260,8 +261,9 @@ export default function DrawDay() {
     <>
       <div className="px-4 py-2">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-white">Draw</h1>
-          <p className="text-gray-400 text-sm mt-1">
+          <p className="ticket-meta text-brand-stamp">★ Team draft</p>
+          <h1 className="font-display text-[2.2rem] leading-none text-brand-ink">Draw</h1>
+          <p className="text-brand-muted text-sm mt-1">
             {drawState?.status === 'completed'
               ? 'Draw is complete'
               : config.drawStatus === 'draw_day'
@@ -271,7 +273,7 @@ export default function DrawDay() {
         </div>
 
         {error && (
-          <div className="mb-4 rounded-xl border border-red-800/70 bg-red-950/40 px-4 py-3 text-sm text-red-300">
+          <div className="mb-4 border-l-4 border-brand-stamp bg-brand-stamp/10 px-4 py-3 text-sm text-brand-stamp">
             {error}
           </div>
         )}
@@ -387,17 +389,17 @@ function AdminSetup({
 
   return (
     <div className="mb-4 space-y-3">
-      <div className="rounded-xl border border-brand-border bg-brand-card p-4">
+      <div className="ticket-card p-4">
         <div className="mb-3 flex items-center gap-2">
-          <Settings size={15} className="text-gray-400" />
-          <span className="text-sm font-semibold text-gray-300">Teams per player</span>
+          <Settings size={15} className="text-brand-faint" />
+          <span className="ticket-meta text-brand-muted">Teams per player</span>
         </div>
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={onOpenPicker}
             disabled={impossible || Boolean(busy)}
-            className="flex h-11 w-16 items-center justify-center rounded-lg border border-brand-border bg-brand-bg text-xl font-bold tabular-nums text-white disabled:opacity-50"
+            className="flex h-11 w-16 items-center justify-center rounded border border-brand-border bg-brand-card font-display text-2xl tabular-nums text-brand-ink disabled:opacity-50"
           >
             {selectedTeamsPerPlayer}
           </button>
@@ -405,11 +407,11 @@ function AdminSetup({
             type="button"
             onClick={onSave}
             disabled={impossible || Boolean(busy)}
-            className="rounded-lg bg-brand-accent px-4 py-3 text-sm font-bold text-brand-bg transition-colors hover:bg-brand-accent-hover disabled:opacity-50"
+            className="ticket-button rounded bg-brand-accent px-4 py-3 text-brand-bg transition-colors hover:bg-brand-accent-hover disabled:opacity-50"
           >
             {saved ? 'Saved!' : 'Save'}
           </button>
-          <div className="min-w-0 text-xs text-gray-500">
+          <div className="min-w-0 text-xs text-brand-faint">
             {impossible ? (
               <span>Not possible with this player count.</span>
             ) : (
@@ -430,13 +432,13 @@ function AdminSetup({
         type="button"
         onClick={onStart}
         disabled={!canStartDraw}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-accent py-3 text-sm font-bold text-brand-bg transition-colors hover:bg-brand-accent-hover disabled:opacity-50"
+        className="ticket-button flex w-full items-center justify-center gap-2 rounded bg-brand-accent py-3 text-brand-bg transition-colors hover:bg-brand-accent-hover disabled:opacity-50"
       >
         <Play size={17} />
         Start Draw
       </button>
 
-      <p className="text-center text-xs text-gray-600">
+      <p className="text-center text-xs text-brand-faint">
         {readyCount}/{numberOfPlayers} players have saved a list
       </p>
     </div>
@@ -445,9 +447,9 @@ function AdminSetup({
 
 function Metric({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg border border-brand-border bg-brand-bg px-2 py-2">
-      <p className="font-bold text-white tabular-nums">{value}</p>
-      <p className="mt-0.5 truncate text-gray-500">{label}</p>
+    <div className="rounded-md border border-brand-border bg-brand-card px-2 py-2">
+      <p className="font-display text-lg leading-none text-brand-ink tabular-nums">{value}</p>
+      <p className="ticket-meta mt-0.5 truncate text-[0.5rem]">{label}</p>
     </div>
   )
 }
@@ -455,27 +457,27 @@ function Metric({ label, value }: { label: string; value: number }) {
 function ReadinessList({ players, readyCount }: { players: PlayerStatus[]; readyCount: number }) {
   return (
     <>
-      <div className="rounded-xl border border-brand-border bg-brand-card p-4">
+      <div className="ticket-card p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-accent/15 text-brand-accent">
+          <div className="flex h-10 w-10 items-center justify-center rounded border border-brand-border bg-brand-card text-brand-stamp">
             <Shuffle size={20} />
           </div>
           <div>
-            <p className="text-sm font-semibold text-white">
+            <p className="font-display text-lg leading-none text-brand-ink">
               {readyCount}/{players.length} ready
             </p>
-            <p className="text-xs text-gray-500">Lists stay private until the draw starts.</p>
+            <p className="text-xs text-brand-faint">Lists stay private until the draw starts.</p>
           </div>
         </div>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-xl border border-brand-border bg-brand-card">
+      <div className="ticket-card mt-4">
         {players.map((player) => (
           <div
             key={player.user.uid}
             className="flex items-center justify-between border-b border-brand-border px-4 py-3 last:border-0"
           >
-            <span className="truncate text-sm font-semibold text-white">{player.user.displayName}</span>
+            <span className="truncate font-display text-base leading-none text-brand-ink">{player.user.displayName}</span>
             {player.ready ? (
               <CheckCircle2 size={18} className="text-emerald-400" />
             ) : (
@@ -576,19 +578,20 @@ function RoundIntro({
 }) {
   return (
     <div className="flex min-h-[52vh] flex-col items-center justify-center text-center">
-      <h2 className="text-4xl font-black text-white">{getRoundLabel(roundNumber)}</h2>
+      <p className="ticket-meta text-brand-stamp">★ Draw round</p>
+      <h2 className="font-display text-5xl leading-none text-brand-ink">{getRoundLabel(roundNumber)}</h2>
       {isAdmin ? (
         <button
           type="button"
           onClick={onStartRound}
           disabled={Boolean(busy)}
-          className="mt-8 flex items-center gap-2 rounded-xl bg-brand-accent px-8 py-3 text-sm font-bold text-brand-bg transition-colors hover:bg-brand-accent-hover disabled:opacity-50"
+          className="ticket-button mt-8 flex items-center gap-2 rounded bg-brand-accent px-8 py-3 text-brand-bg transition-colors hover:bg-brand-accent-hover disabled:opacity-50"
         >
           <Play size={18} />
           Start
         </button>
       ) : (
-        <p className="mt-4 text-sm text-gray-500">Waiting for the round to start.</p>
+        <p className="mt-4 text-sm text-brand-faint">Waiting for the round to start.</p>
       )}
     </div>
   )
@@ -617,11 +620,11 @@ function PickingView({
 }) {
   return (
     <div className="flex min-h-[58vh] flex-col items-center justify-center text-center">
-      <p className="mb-5 text-sm font-semibold uppercase tracking-[0.18em] text-gray-500">
+      <p className="ticket-meta mb-5 text-brand-stamp">
         {getRoundLabel(state.roundNumber)}
       </p>
       <LargeAvatar url={currentPlayer.avatarUrl} name={currentPlayer.displayName} />
-      <h2 className="mt-4 text-2xl font-black text-white">{currentPlayer.displayName}</h2>
+      <h2 className="mt-4 font-display text-3xl leading-none text-brand-ink">{currentPlayer.displayName}</h2>
 
       {currentPlayerTeams.length > 0 && (
         <div className="mt-4 flex max-w-full flex-wrap justify-center gap-2">
@@ -635,22 +638,22 @@ function PickingView({
         type="button"
         onClick={onOpenTeamPicker}
         disabled={!isAdmin || Boolean(busy)}
-        className="mt-8 flex w-full max-w-sm items-center justify-between gap-3 rounded-xl border border-brand-border bg-brand-card px-4 py-4 text-left transition-colors hover:border-gray-600 disabled:cursor-default disabled:hover:border-brand-border"
+        className="ticket-card mt-8 flex w-full max-w-sm items-center justify-between gap-3 px-4 py-4 text-left transition-colors hover:border-brand-ink disabled:cursor-default disabled:hover:border-brand-border"
       >
         {selectedTeam ? (
           <span className="flex min-w-0 items-center gap-3">
             <span className="text-3xl">{selectedTeam.flag}</span>
             <span className="min-w-0">
-              <span className="block truncate text-base font-bold text-white">
+              <span className="block truncate font-display text-lg leading-none text-brand-ink">
                 {getCountryName(selectedTeam.name)}
               </span>
-              <span className="block text-xs text-gray-500">Selected team</span>
+              <span className="ticket-meta mt-1 block">Selected team</span>
             </span>
           </span>
         ) : (
-          <span className="text-sm font-semibold text-gray-500">No available team</span>
+          <span className="text-sm font-semibold text-brand-faint">No available team</span>
         )}
-        {isAdmin && <ChevronDown size={20} className="shrink-0 text-gray-500" />}
+        {isAdmin && <ChevronDown size={20} className="shrink-0 text-brand-faint" />}
       </button>
 
       {isAdmin ? (
@@ -658,12 +661,12 @@ function PickingView({
           type="button"
           onClick={onAdvance}
           disabled={Boolean(busy) || !selectedTeam}
-          className="mt-5 w-full max-w-sm rounded-xl bg-brand-accent py-3 text-sm font-bold text-brand-bg transition-colors hover:bg-brand-accent-hover disabled:opacity-50"
+          className="ticket-button mt-5 w-full max-w-sm rounded bg-brand-accent py-3 text-brand-bg transition-colors hover:bg-brand-accent-hover disabled:opacity-50"
         >
           {isLastPlayer ? 'Finish round' : 'Next player'}
         </button>
       ) : (
-        <p className="mt-5 text-sm text-gray-500">Waiting for the pick to be confirmed.</p>
+        <p className="mt-5 text-sm text-brand-faint">Waiting for the pick to be confirmed.</p>
       )}
     </div>
   )
@@ -694,15 +697,15 @@ function SummaryView({
 
   return (
     <div>
-      <div className="mb-4 flex items-center gap-3 rounded-xl border border-brand-border bg-brand-card p-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-accent/15 text-brand-accent">
+      <div className="ticket-card mb-4 flex items-center gap-3 p-4">
+        <div className="flex h-10 w-10 items-center justify-center rounded border border-brand-border bg-brand-card text-brand-stamp">
           <Users size={20} />
         </div>
         <div>
-          <p className="text-sm font-bold text-white">
+          <p className="font-display text-lg leading-none text-brand-ink">
             {state.status === 'completed' ? 'Game started' : `${getRoundLabel(state.roundNumber)} complete`}
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="ticket-meta mt-1">
             {state.assignments.length}/{state.roundCount * state.numberOfPlayers} assigned
           </p>
         </div>
@@ -716,18 +719,18 @@ function SummaryView({
             .filter((team): team is Team => Boolean(team))
 
           return (
-            <div key={player.uid} className="rounded-xl border border-brand-border bg-brand-card p-4">
+            <div key={player.uid} className="ticket-card p-4">
               <div className="mb-3 flex items-center gap-3">
                 <LargeAvatar
                   url={displayPlayer.avatarUrl}
                   name={displayPlayer.displayName}
                   className="h-10 w-10"
                 />
-                <p className="min-w-0 truncate text-sm font-bold text-white">{displayPlayer.displayName}</p>
+                <p className="min-w-0 truncate font-display text-base leading-none text-brand-ink">{displayPlayer.displayName}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {assignedTeams.length === 0 ? (
-                  <span className="text-xs italic text-gray-600">No assigned teams</span>
+                  <span className="text-xs italic text-brand-faint">No assigned teams</span>
                 ) : (
                   assignedTeams.map((team) => <TeamChip key={team.id} team={team} />)
                 )}
@@ -742,14 +745,14 @@ function SummaryView({
           type="button"
           onClick={drawFinished ? onComplete : onStartRound}
           disabled={Boolean(busy)}
-          className="mt-5 w-full rounded-xl bg-brand-accent py-3 text-sm font-bold text-brand-bg transition-colors hover:bg-brand-accent-hover disabled:opacity-50"
+          className="ticket-button mt-5 w-full rounded bg-brand-accent py-3 text-brand-bg transition-colors hover:bg-brand-accent-hover disabled:opacity-50"
         >
           {drawFinished ? 'Start Game' : getRoundLabel(state.roundNumber + 1)}
         </button>
       )}
 
       {teams.length > 0 && (
-        <p className="mt-4 text-center text-xs text-gray-600">
+        <p className="mt-4 text-center text-xs text-brand-faint">
           Double ownership stops after {state.doubleOwnedLimit} teams.
         </p>
       )}
@@ -759,7 +762,7 @@ function SummaryView({
 
 function TeamChip({ team }: { team: Team }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-brand-border bg-brand-bg px-2 py-1 text-xs font-semibold text-gray-300">
+    <span className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-brand-border bg-brand-card px-2 py-1 text-xs font-semibold text-brand-muted">
       <span className="text-base leading-none">{team.flag}</span>
       <span className="truncate">{getCountryName(team.name)}</span>
     </span>
@@ -776,7 +779,7 @@ function LargeAvatar({
   className?: string
 }) {
   return (
-    <div className={`${className} flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-border`}>
+    <div className={`${className} flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-ink text-brand-ticket ring-2 ring-brand-card`}>
       {url?.startsWith('emoji:') ? (
         <span className={className === 'h-28 w-28' ? 'text-5xl leading-none' : 'text-lg leading-none'}>
           {url.replace('emoji:', '')}
@@ -784,7 +787,7 @@ function LargeAvatar({
       ) : url ? (
         <img src={url} alt={name} className="h-full w-full object-cover" />
       ) : (
-        <span className={className === 'h-28 w-28' ? 'text-4xl font-black text-brand-accent' : 'text-sm font-bold text-brand-accent'}>
+        <span className={className === 'h-28 w-28' ? 'text-4xl font-black text-brand-ticket' : 'text-sm font-bold text-brand-ticket'}>
           {name[0]?.toUpperCase() ?? '?'}
         </span>
       )}
@@ -807,21 +810,21 @@ function ConfirmModal({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6">
-      <div className="w-full max-w-sm rounded-2xl border border-brand-border bg-brand-card p-6">
-        <h2 className="mb-2 text-lg font-bold text-white">{title}</h2>
-        <p className="mb-6 text-sm text-gray-400">{body}</p>
+      <div className="ticket-card w-full max-w-sm p-6">
+        <h2 className="mb-2 font-display text-2xl leading-none text-brand-ink">{title}</h2>
+        <p className="mb-6 text-sm text-brand-muted">{body}</p>
         <div className="flex gap-3">
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 rounded-xl border border-brand-border py-3 text-sm font-semibold text-gray-300 transition-colors hover:text-white"
+            className="ticket-button flex-1 rounded border border-brand-border py-3 text-brand-ink transition-colors hover:border-brand-ink"
           >
             No
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="flex-1 rounded-xl bg-brand-accent py-3 text-sm font-bold text-brand-bg transition-colors hover:bg-brand-accent-hover"
+            className="ticket-button flex-1 rounded bg-brand-accent py-3 text-brand-bg transition-colors hover:bg-brand-accent-hover"
           >
             {confirmLabel}
           </button>
@@ -872,12 +875,12 @@ function NumberWheelPicker({
         className="absolute bottom-0 left-0 right-0 mx-auto max-w-[430px] rounded-t-2xl border-t border-brand-border bg-brand-card p-4 shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <h2 className="mb-3 text-lg font-bold text-white">Teams per player</h2>
+        <h2 className="mb-3 font-display text-xl leading-none text-brand-ink">Teams per player</h2>
         <div
-          className="relative overflow-hidden rounded-xl border border-brand-border bg-brand-bg"
+          className="relative overflow-hidden rounded-md border border-brand-border bg-brand-card"
           style={{ height: pickerHeight }}
         >
-          <div className="pointer-events-none absolute left-0 right-0 top-1/2 z-10 h-11 -translate-y-1/2 border-y border-brand-accent/45 bg-brand-accent/5" />
+          <div className="pointer-events-none absolute left-0 right-0 top-1/2 z-10 h-11 -translate-y-1/2 border-y border-brand-stamp/45 bg-brand-stamp/5" />
           <div
             ref={scrollRef}
             onScroll={handleScroll}
@@ -895,7 +898,7 @@ function NumberWheelPicker({
                 type="button"
                 onClick={() => setSelected(option)}
                 className={`relative z-20 flex w-full snap-center items-center justify-center text-base font-bold tabular-nums transition-colors ${
-                  option === selected ? 'text-white' : 'text-gray-400 hover:text-white'
+                  option === selected ? 'text-brand-ink' : 'text-brand-muted hover:text-brand-ink'
                 }`}
                 style={{ height: PICKER_ROW_HEIGHT }}
               >
@@ -914,7 +917,7 @@ function NumberWheelPicker({
         <button
           type="button"
           onClick={onClose}
-          className="mt-3 w-full rounded-lg py-3 text-sm font-semibold text-gray-500 transition-colors hover:text-white"
+          className="ticket-button mt-3 w-full rounded py-3 text-brand-faint transition-colors hover:text-brand-ink"
         >
           Cancel
         </button>
@@ -951,18 +954,18 @@ function TeamPickerModal({
         className="absolute bottom-0 left-0 right-0 mx-auto max-w-[430px] rounded-t-2xl border-t border-brand-border bg-brand-card p-4 shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <h2 className="mb-3 text-lg font-bold text-white">Choose Team</h2>
+        <h2 className="mb-3 font-display text-xl leading-none text-brand-ink">Choose Team</h2>
         <input
           autoFocus
           type="text"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search teams..."
-          className="mb-3 w-full rounded-lg border border-brand-border bg-brand-bg px-3 py-3 text-sm text-white placeholder-gray-600 focus:border-brand-accent focus:outline-none"
+          className="mb-3 w-full rounded border border-brand-border bg-brand-card px-3 py-3 text-sm text-brand-ink placeholder-brand-faint focus:border-brand-ink focus:outline-none"
         />
-        <div className="max-h-[46vh] overflow-y-auto rounded-xl border border-brand-border">
+        <div className="max-h-[46vh] overflow-y-auto rounded-md border border-brand-border">
           {filteredTeams.length === 0 ? (
-            <p className="px-4 py-4 text-sm text-gray-600">No available teams.</p>
+            <p className="px-4 py-4 text-sm text-brand-faint">No available teams.</p>
           ) : (
             filteredTeams.map((team) => (
               <button
@@ -970,11 +973,11 @@ function TeamPickerModal({
                 type="button"
                 disabled={disabled}
                 onClick={() => onSelect(team.id)}
-                className="flex w-full items-center justify-between border-b border-brand-border px-4 py-3 text-left transition-colors last:border-0 hover:bg-brand-bg disabled:opacity-50"
+                className="flex w-full items-center justify-between border-b border-brand-border px-4 py-3 text-left transition-colors last:border-0 hover:bg-brand-border disabled:opacity-50"
               >
                 <span className="flex min-w-0 items-center gap-3">
                   <span className="text-2xl">{team.flag}</span>
-                  <span className="truncate text-sm font-semibold text-white">
+                  <span className="truncate text-sm font-semibold text-brand-ink">
                     {getCountryName(team.name)}
                   </span>
                 </span>
@@ -986,7 +989,7 @@ function TeamPickerModal({
         <button
           type="button"
           onClick={onClose}
-          className="mt-3 w-full rounded-lg py-3 text-sm font-semibold text-gray-500 transition-colors hover:text-white"
+          className="ticket-button mt-3 w-full rounded py-3 text-brand-faint transition-colors hover:text-brand-ink"
         >
           Cancel
         </button>

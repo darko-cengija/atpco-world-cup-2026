@@ -9,6 +9,7 @@ import { useTeamOwners } from '@/hooks/useTeamOwners'
 import { useUserPredictions } from '@/hooks/useUserPredictions'
 import { getCountryName } from '@/lib/translations'
 import { useDrawConfig } from '@/hooks/useDrawConfig'
+import { TicketSpinner } from '@/components/TicketMark'
 
 function formatMatchDate(date: Date) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -35,27 +36,33 @@ export default function Home() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
+        <TicketSpinner label="Loading fixtures" />
       </div>
     )
   }
 
   return (
     <div className="px-4 py-2">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Upcoming Matches</h1>
-        <p className="text-gray-400 text-sm mt-1">{config.competitionName ?? 'World Cup 26'}</p>
+      <div className="mb-6 px-1">
+        <div className="ticket-meta mb-2 flex items-center gap-2 text-brand-stamp">
+          <span>★</span>
+          <span>Group Stage</span>
+          <span className="h-px flex-1 bg-brand-border" />
+          <span>{matches.length || HOME_MATCH_WINDOW} fixtures</span>
+        </div>
+        <h1 className="font-display text-[2.6rem] leading-none text-brand-ink">Upcoming<br />matches</h1>
+        <p className="ticket-meta mt-2">{config.competitionName ?? 'World Cup 26'}</p>
       </div>
 
       <div className="space-y-4">
         {error && (
-          <p className="text-red-300 bg-red-950/40 border border-red-900 rounded-lg px-4 py-3 text-sm">
+          <p className="border-l-4 border-brand-stamp bg-brand-stamp/10 px-4 py-3 text-sm text-brand-stamp">
             {error} Refresh the page in a minute.
           </p>
         )}
 
         {matches.length === 0 && (
-          <p className="text-gray-500 text-center py-10">No upcoming matches.</p>
+          <p className="rounded-xl border border-dashed border-brand-border py-10 text-center text-sm text-brand-faint">No upcoming matches.</p>
         )}
 
         {matches.map((match, index) => {
@@ -70,17 +77,40 @@ export default function Home() {
               initial={{ opacity: 0, x: -16 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.08 }}
-              className="bg-brand-card border border-brand-border rounded-xl overflow-hidden"
+              className="ticket-card"
             >
-              <div className="p-4">
-                {/* Date / venue row */}
-                <div className="flex items-center justify-between mb-3 text-xs text-gray-400">
-                  <span>{formatMatchDate(match.date)} · {formatMatchTime(match.date)}</span>
-                  <span className="text-gray-500">{match.venue}</span>
+              <div>
+                <div className="flex items-start justify-between gap-3 border-b border-brand-border px-4 py-3">
+                  <div>
+                    <p className="ticket-meta">{isLocked ? 'In play' : 'Kick-off'}</p>
+                    <p className="font-display text-2xl leading-none text-brand-ink">{formatMatchDate(match.date).replace(', 2026', '')}</p>
+                    <p className="font-mono text-xs tabular-nums text-brand-ink">{formatMatchTime(match.date)}</p>
+                  </div>
+                  <div className="text-right">
+                    {match.status === 'live' ? (
+                      <span className="ticket-pill ticket-pill-stamp">
+                        <span className="h-1.5 w-1.5 animate-[tkPulse_1.4s_ease-in-out_infinite] rounded-full bg-brand-stamp" />
+                        {match.statusShort === 'HT'
+                          ? 'Halftime'
+                          : match.statusShort === 'BT'
+                            ? 'Awaiting extra time'
+                            : match.statusShort === 'P'
+                              ? 'Awaiting penalties'
+                              : match.minute !== null
+                                ? `${match.minute}'`
+                                : 'Live'}
+                      </span>
+                    ) : (
+                      <p className="ticket-meta">Venue</p>
+                    )}
+                    <p className="mt-1 max-w-[9.5rem] text-sm font-semibold leading-tight text-brand-ink">{match.venue}</p>
+                  </div>
                 </div>
 
+                <div className="ticket-tear"><div className="ticket-tear-line" /></div>
+
                 {/* Teams */}
-                <div className="flex items-center justify-between mb-3">
+                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-5">
                   <TeamCol
                     flag={match.homeTeam.flag}
                     name={getCountryName(match.homeTeam.name)}
@@ -101,10 +131,10 @@ export default function Home() {
                                   : 'Live'}
                         </span>
                       )}
-                      <span className="text-white font-bold text-xl tabular-nums">{match.homeScore} – {match.awayScore}</span>
+                      <span className="font-display text-3xl leading-none text-brand-ink tabular-nums">{match.homeScore}:{match.awayScore}</span>
                     </div>
                   ) : (
-                    <span className="text-gray-500 font-bold text-lg px-3">VS</span>
+                    <span className="grid h-10 w-10 place-items-center rounded-full border-2 border-brand-ink bg-brand-card font-display text-sm text-brand-ink">vs</span>
                   )}
                   <TeamCol
                     flag={match.awayTeam.flag}
@@ -115,37 +145,41 @@ export default function Home() {
                 </div>
 
                 {/* Predict button / submitted state */}
-                {isLocked ? (
-                  hasPredicted ? (
+                <div className="flex items-center justify-between gap-3 border-t border-dashed border-brand-border px-4 py-3">
+                  <div className="ticket-meta">
+                    Match #{String(index + 1).padStart(3, '0')}<br />
+                    <span className="text-brand-muted">{match.homeTeamId.slice(0, 3)}-{match.awayTeamId.slice(0, 3)}</span>
+                  </div>
+                  {isLocked ? (
+                    hasPredicted ? (
+                      <button
+                        onClick={() => navigate(`/match/${match.id}`)}
+                        className="ticket-button inline-flex items-center gap-2 rounded border border-brand-border px-3 py-2 text-brand-ink"
+                      >
+                        <CheckCircle2 size={15} />
+                        {predictions[match.id].outcome} · Locked
+                      </button>
+                    ) : (
+                      <div className="ticket-pill">No prediction · Locked</div>
+                    )
+                  ) : hasPredicted ? (
                     <button
                       onClick={() => navigate(`/match/${match.id}`)}
-                      className="w-full py-3 bg-emerald-900/40 border border-emerald-700 text-emerald-400 font-semibold rounded-lg flex items-center justify-center gap-2 text-sm hover:bg-emerald-900/60 transition-colors"
+                      className="inline-flex items-center gap-3"
                     >
-                      <CheckCircle2 size={18} />
-                      You predicted {predictions[match.id].outcome} · Locked
+                      <span className="ticket-stamp">Predicted · {predictions[match.id].outcome}</span>
+                      <span className="ticket-button rounded border border-brand-ink px-3 py-2 text-brand-ink">Edit</span>
                     </button>
                   ) : (
-                    <div className="w-full py-3 bg-brand-border text-gray-500 font-semibold rounded-lg text-center text-sm">
-                      No prediction · Locked
-                    </div>
-                  )
-                ) : hasPredicted ? (
-                  <button
-                    onClick={() => navigate(`/match/${match.id}`)}
-                    className="w-full py-3 bg-emerald-900/40 border border-emerald-700 text-emerald-400 font-semibold rounded-lg flex items-center justify-center gap-2 text-sm hover:bg-emerald-900/60 transition-colors"
-                  >
-                    <CheckCircle2 size={18} />
-                    You predicted {predictions[match.id].outcome} · Edit
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => navigate(`/match/${match.id}`)}
-                    className="w-full py-3 bg-brand-accent text-brand-bg font-semibold rounded-lg flex items-center justify-center gap-2 hover:bg-brand-accent-hover transition-colors"
-                  >
-                    Predict
-                    <ChevronRight size={18} />
-                  </button>
-                )}
+                    <button
+                      onClick={() => navigate(`/match/${match.id}`)}
+                      className="ticket-button flex items-center justify-center gap-2 rounded bg-brand-accent px-4 py-3 text-brand-bg hover:bg-brand-accent-hover transition-colors"
+                    >
+                      Predict
+                      <ChevronRight size={16} />
+                    </button>
+                  )}
+                </div>
               </div>
             </motion.div>
           )
@@ -155,10 +189,18 @@ export default function Home() {
       {/* Finished matches link */}
       <button
         onClick={() => navigate('/finished')}
-        className="w-full mt-6 flex items-center justify-center gap-2 py-3 rounded-xl border border-brand-border text-gray-400 text-sm font-semibold hover:border-gray-500 hover:text-white transition-colors"
+        className="ticket-card mt-6 flex w-full items-center justify-between px-4 py-4 text-brand-ink transition-colors hover:border-brand-ink"
       >
-        <History size={16} />
-        Finished Matches
+        <span className="flex items-center gap-3">
+          <span className="grid h-8 w-8 place-items-center rounded border-2 border-brand-gold text-brand-gold">
+            <History size={15} />
+          </span>
+          <span>
+            <span className="block font-display text-lg leading-none">Finished matches</span>
+            <span className="ticket-meta">Stubs · Archive</span>
+          </span>
+        </span>
+        <ChevronRight size={18} />
       </button>
     </div>
   )
@@ -179,16 +221,20 @@ function TeamCol({
 
   return (
     <div className={`flex-1 flex flex-col ${align === 'right' ? 'items-end' : 'items-start'}`}>
-      <span className="text-4xl mb-1">{flag}</span>
+      <span className="mb-2 grid h-9 min-w-12 place-items-center rounded border border-brand-border bg-brand-card px-2 text-3xl shadow-sm">{flag}</span>
       {owners.length > 0 ? (
         <>
-          <span className={`max-w-full text-xs text-gray-400 mt-0.5 ${textAlign}`}>{name}</span>
-          <span className={`max-w-full font-semibold text-white text-sm ${textAlign}`}>
+          <span className={`ticket-meta max-w-full ${textAlign}`}>{align === 'right' ? 'Away' : 'Home'}</span>
+          <span className={`max-w-full font-display text-xl leading-tight text-brand-ink ${textAlign}`}>{name}</span>
+          <span className={`max-w-full text-xs font-semibold text-brand-muted ${textAlign}`}>
             {owners.join(', ')}
           </span>
         </>
       ) : (
-        <span className={`max-w-full font-semibold text-white text-sm ${textAlign}`}>{name}</span>
+        <>
+          <span className={`ticket-meta max-w-full ${textAlign}`}>{align === 'right' ? 'Away' : 'Home'}</span>
+          <span className={`max-w-full font-display text-xl leading-tight text-brand-ink ${textAlign}`}>{name}</span>
+        </>
       )}
     </div>
   )

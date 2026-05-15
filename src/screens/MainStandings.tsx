@@ -7,6 +7,7 @@ import { useWinningChances } from '@/hooks/useWinningChances'
 import { useAuth } from '@/contexts/AuthContext'
 import { Avatar } from '@/components/Avatar'
 import { functions } from '@/firebase'
+import { TicketSpinner } from '@/components/TicketMark'
 
 // Columns are in natural football standings order (left → right):
 //   # | Player | Pld | W | D | L | GF | GA | GD | Pts
@@ -23,8 +24,8 @@ import { functions } from '@/firebase'
 //  9  GF     sm:
 // 10  GA     sm:
 
-const TH = 'px-2 py-2 font-medium text-[10px] uppercase tracking-wider text-gray-500 whitespace-nowrap'
-const TD = 'px-2 py-3 text-sm text-center text-gray-300'
+const TH = 'px-2 py-2 font-mono font-bold text-[9px] uppercase tracking-[0.14em] text-brand-faint whitespace-nowrap'
+const TD = 'px-2 py-3 font-mono text-xs text-center text-brand-muted tabular-nums'
 
 export default function MainStandings() {
   const { standings, loading } = useMainStandings()
@@ -63,21 +64,22 @@ export default function MainStandings() {
 
   return (
     <div className="px-4 py-2">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Standings</h1>
-        <p className="text-gray-400 text-sm mt-1">Based on results from your teams</p>
+      <div className="mb-6 px-1">
+        <p className="ticket-meta text-brand-stamp">★ League table</p>
+        <h1 className="font-display text-[2.2rem] leading-none text-brand-ink">Standings</h1>
+        <p className="text-sm text-brand-muted mt-1">Based on results from your teams</p>
       </div>
 
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <div className="w-8 h-8 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
+          <TicketSpinner label="Calculating" />
         </div>
       ) : standings.length === 0 ? (
-        <p className="text-gray-500 text-center py-10">
+        <p className="rounded-xl border border-dashed border-brand-border text-brand-faint text-center py-10">
           No results yet. Standings will appear after matches are played.
         </p>
       ) : (
-        <div className="bg-brand-card border border-brand-border rounded-xl overflow-hidden">
+        <div className="ticket-card">
           <table className="w-full border-collapse">
             <colgroup>
               <col className="w-7" />                                    {/* # */}
@@ -119,8 +121,8 @@ export default function MainStandings() {
                     className={`border-b border-brand-border last:border-0 cursor-pointer hover:bg-white/5 ${isMe ? 'bg-brand-accent/5' : ''}`}
                   >
                     {/* # */}
-                    <td className="pl-3 pr-1 py-3 text-sm text-gray-500 font-medium">
-                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                    <td className="pl-3 pr-1 py-3">
+                      <RankBadge rank={i + 1} />
                     </td>
 
                     {/* Player */}
@@ -128,7 +130,7 @@ export default function MainStandings() {
                       <div className="flex items-center gap-2 min-w-0">
                         <Avatar url={avatarUrl} name={displayName} className="w-7 h-7" />
                         <div className="flex flex-col min-w-0">
-                          <span className={`text-sm font-semibold truncate ${isMe ? 'text-brand-accent' : 'text-white'}`}>
+                          <span className={`font-display text-base leading-none truncate ${isMe ? 'text-brand-stamp' : 'text-brand-ink'}`}>
                             {displayName}
                             {isMe && <span className="text-xs ml-1 font-normal opacity-60">(you)</span>}
                           </span>
@@ -161,7 +163,7 @@ export default function MainStandings() {
                     <td className={TD}>{row.gd > 0 ? `+${row.gd}` : row.gd}</td>
 
                     {/* Pts - points, bold */}
-                    <td className={`${TD} font-bold text-white pr-3`}>{row.points}</td>
+                    <td className={`${TD} font-display text-lg font-normal text-brand-ink pr-3`}>{row.points}</td>
                   </tr>
                 )
               })}
@@ -174,7 +176,8 @@ export default function MainStandings() {
         <section className="mt-8">
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
-              <h2 className="text-xl font-bold text-white">Winning Chances</h2>
+              <p className="ticket-meta text-brand-stamp">★ Simulation</p>
+              <h2 className="font-display text-2xl leading-none text-brand-ink">Winning Chances</h2>
               <p className="text-gray-400 text-sm mt-1">Based on a Monte Carlo simulation of remaining matches</p>
             </div>
             {user?.role === 'admin' && (
@@ -182,7 +185,7 @@ export default function MainStandings() {
                 type="button"
                 onClick={handleRefreshWinningChances}
                 disabled={refreshingChances}
-                className="mt-1 inline-flex h-9 shrink-0 items-center gap-2 rounded-lg border border-brand-border bg-white/5 px-3 text-xs font-bold text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+                className="ticket-button mt-1 inline-flex h-9 shrink-0 items-center gap-2 rounded border border-brand-border bg-brand-card px-3 text-brand-ink hover:border-brand-ink disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <RefreshCw size={14} className={refreshingChances ? 'animate-spin' : ''} />
                 <span>{refreshingChances ? 'Refreshing' : 'Refresh'}</span>
@@ -191,15 +194,15 @@ export default function MainStandings() {
           </div>
 
           {chancesLoading ? (
-            <div className="bg-brand-card border border-brand-border rounded-xl flex items-center justify-center py-10">
-              <div className="w-6 h-6 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
+            <div className="ticket-card flex items-center justify-center py-10">
+              <TicketSpinner label="Running" />
             </div>
           ) : chances.length === 0 ? (
-            <p className="bg-brand-card border border-brand-border rounded-xl text-gray-500 text-center py-8">
+            <p className="ticket-card text-brand-faint text-center py-8">
               Winning chances will appear after the next calculation.
             </p>
           ) : (
-            <div className="bg-brand-card border border-brand-border rounded-xl overflow-hidden">
+            <div className="ticket-card">
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="border-b border-brand-border">
@@ -236,7 +239,7 @@ export default function MainStandings() {
                         <td className="pl-3 pr-2 py-3">
                           <div className="flex items-center gap-2 min-w-0">
                             <Avatar url={avatarUrl} name={displayName} className="w-7 h-7" />
-                            <span className={`text-sm font-semibold truncate ${isMe ? 'text-brand-accent' : 'text-white'}`}>
+                            <span className={`font-display text-base leading-none truncate ${isMe ? 'text-brand-stamp' : 'text-brand-ink'}`}>
                               {displayName}
                               {isMe && <span className="text-xs ml-1 font-normal opacity-60">(you)</span>}
                             </span>
@@ -244,18 +247,18 @@ export default function MainStandings() {
                         </td>
                         <td className="pl-2 pr-2 py-3">
                           <div className="flex items-center justify-end gap-3">
-                            <div className="w-16 min-[390px]:w-24 h-2 rounded-full bg-white/10 overflow-hidden">
+                            <div className="w-16 min-[390px]:w-24 h-2 rounded-sm bg-brand-border overflow-hidden">
                               <div
-                                className="h-full rounded-full bg-brand-accent"
+                                className="h-full rounded-sm bg-brand-stamp"
                                 style={{ width: `${row.chancePercent}%` }}
                               />
                             </div>
-                            <span className="w-10 text-right text-sm font-bold text-white">
+                            <span className="w-10 text-right font-mono text-sm font-bold text-brand-ink">
                               {row.chancePercent}%
                             </span>
                           </div>
                         </td>
-                        <td className="pl-1 pr-3 py-3 text-right text-sm font-semibold tabular-nums text-white">
+                        <td className="pl-1 pr-3 py-3 text-right font-mono text-sm font-semibold tabular-nums text-brand-ink">
                           {typeof row.expectedPoints === 'number' ? row.expectedPoints.toFixed(1) : '-'}
                         </td>
                       </tr>
@@ -269,10 +272,30 @@ export default function MainStandings() {
       )}
 
       {toastMessage && (
-        <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-brand-border bg-brand-card px-4 py-2 text-sm font-semibold text-white shadow-xl">
+        <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-md bg-brand-ink px-4 py-2 text-sm font-semibold text-brand-ticket shadow-xl">
           {toastMessage}
         </div>
       )}
     </div>
   )
+}
+
+function RankBadge({ rank }: { rank: number }) {
+  const topClass = rank === 1
+    ? 'bg-[#cba14e] text-[#fff8e6]'
+    : rank === 2
+      ? 'bg-[#a9a9a9] text-[#f7f7f7]'
+      : rank === 3
+        ? 'bg-[#a06640] text-[#f5ecdc]'
+        : 'text-brand-muted'
+
+  if (rank <= 3) {
+    return (
+      <span className={`grid h-6 w-6 place-items-center rounded-full font-display text-sm leading-none ${topClass}`}>
+        {rank}
+      </span>
+    )
+  }
+
+  return <span className="font-mono text-xs font-bold tabular-nums text-brand-muted">{String(rank).padStart(2, '0')}</span>
 }

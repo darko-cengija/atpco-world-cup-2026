@@ -6,6 +6,7 @@ import { db } from '@/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { getCountryName, getStageName } from '@/lib/translations'
 import type { AppUser, Match, PredictionOutcome } from '@/types'
+import { TicketSpinner } from '@/components/TicketMark'
 
 interface PredictionEntry {
   userId: string
@@ -154,7 +155,7 @@ export default function FinishedMatches() {
   if (loading) {
     return (
       <div className="min-h-screen bg-brand-bg flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
+        <TicketSpinner label="Loading archive" />
       </div>
     )
   }
@@ -162,27 +163,30 @@ export default function FinishedMatches() {
   return (
     <div className="min-h-screen bg-brand-bg">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-10 pb-4">
-        <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-white transition-colors">
+      <div className="flex items-center gap-3 px-4 pt-8 pb-4">
+        <button onClick={() => navigate(-1)} className="grid h-9 w-9 place-items-center rounded-lg border border-brand-border text-brand-ink hover:border-brand-ink transition-colors">
           <ArrowLeft size={22} />
         </button>
-        <h1 className="text-lg font-bold text-white">Finished Matches</h1>
+        <div>
+          <p className="ticket-meta">Stubs · Archive</p>
+          <h1 className="font-display text-xl leading-none text-brand-ink">Finished Matches</h1>
+        </div>
       </div>
 
       {rows.length === 0 && (
-        <p className="text-gray-500 text-center py-20">No finished matches.</p>
+        <p className="mx-4 rounded-xl border border-dashed border-brand-border py-20 text-center text-brand-faint">No finished matches.</p>
       )}
 
       <div className="px-4 pb-8 space-y-4">
         {rows.map(({ match, actualOutcome, predictions }) => (
             <div
               key={match.id}
-              className="bg-brand-card border border-brand-border rounded-xl overflow-hidden"
+              className="ticket-card"
             >
               {/* Stage + date */}
-              <div className="flex items-center justify-between px-4 pt-3 pb-1 text-xs text-gray-500">
-                <span>{getStageName(match.stage)}</span>
-                <span>
+              <div className="flex items-center justify-between border-b border-dashed border-brand-border px-4 py-3 text-xs">
+                <span className="ticket-meta text-brand-stamp">★ {getStageName(match.stage)}</span>
+                <span className="font-mono tabular-nums text-brand-faint">
                   {match.date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
                 </span>
               </div>
@@ -191,10 +195,10 @@ export default function FinishedMatches() {
               <div className="flex items-center justify-between px-4 py-3">
                 <TeamCell flag={match.homeTeam.flag} name={getCountryName(match.homeTeam.name)} align="left" />
                 <div className="flex flex-col items-center px-3">
-                  <span className="text-2xl font-bold text-white tabular-nums">
-                    {match.homeScore} – {match.awayScore}
+                  <span className="font-display text-3xl leading-none text-brand-ink tabular-nums">
+                    {match.homeScore}:{match.awayScore}
                   </span>
-                  <span className="text-xs font-semibold text-brand-accent mt-0.5">
+                  <span className="ticket-stamp mt-1 !py-1 !text-xs">
                     {actualOutcome}
                   </span>
                 </div>
@@ -203,7 +207,7 @@ export default function FinishedMatches() {
 
               {/* Player predictions */}
               {predictions.length > 0 && (
-                <div className="border-t border-brand-border px-4 py-3">
+                <div className="border-t border-dashed border-brand-border px-4 py-3">
                   <div className="flex flex-wrap gap-2">
                     {users.map((u) => {
                       const pred = predictions.find((p) => p.userId === u.uid)
@@ -215,12 +219,12 @@ export default function FinishedMatches() {
                       return (
                         <div
                           key={u.uid}
-                          className={`flex items-center gap-1.5 rounded-lg px-2 py-1 border text-xs ${
+                          className={`flex items-center gap-1.5 rounded-md px-2 py-1 border text-xs ${
                             !pred
-                              ? 'border-brand-border text-gray-600'
+                              ? 'border-brand-border text-brand-faint'
                               : correct
-                              ? 'border-emerald-700 bg-emerald-900/30 text-emerald-400'
-                              : 'border-red-800/60 bg-red-900/20 text-red-400'
+                              ? 'border-emerald-700 bg-emerald-700/10 text-emerald-700'
+                              : 'border-brand-stamp/60 bg-brand-stamp/10 text-brand-stamp'
                           }`}
                         >
                           <AvatarTiny url={avatarUrl} name={displayName} />
@@ -258,20 +262,20 @@ function TeamCell({ flag, name, align }: { flag: string; name: string; align: 'l
   return (
     <div className={`flex-1 flex flex-col ${align === 'right' ? 'items-end' : 'items-start'}`}>
       <span className="text-3xl">{flag}</span>
-      <span className={`max-w-full text-xs font-semibold text-white mt-0.5 ${textAlign}`}>{name}</span>
+      <span className={`max-w-full font-display text-sm leading-tight text-brand-ink mt-0.5 ${textAlign}`}>{name}</span>
     </div>
   )
 }
 
 function AvatarTiny({ url, name }: { url: string | null; name: string }) {
   return (
-    <div className="w-4 h-4 rounded-full bg-brand-border flex items-center justify-center overflow-hidden shrink-0">
+    <div className="w-4 h-4 rounded-full bg-brand-ink text-brand-ticket flex items-center justify-center overflow-hidden shrink-0">
       {url?.startsWith('emoji:') ? (
         <span className="text-[9px] leading-none">{url.replace('emoji:', '')}</span>
       ) : url ? (
         <img src={url} alt={name} className="w-full h-full object-cover" />
       ) : (
-        <span className="text-[8px] font-bold text-brand-accent">{name[0]?.toUpperCase()}</span>
+        <span className="text-[8px] font-bold text-brand-ticket">{name[0]?.toUpperCase()}</span>
       )}
     </div>
   )

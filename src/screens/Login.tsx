@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { Copy, Share } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { iosNeedsSafari } from '@/lib/pwa'
+import { TicketMark, TicketSpinner } from '@/components/TicketMark'
 
 export default function Login() {
   const { user, signInWithGoogle, loading, authError, clearAuthError } = useAuth()
@@ -59,9 +60,9 @@ export default function Login() {
   if (loading) {
     return (
       <div className="min-h-screen bg-brand-bg flex flex-col items-center justify-center px-6 text-center">
-        <div className="mb-5 w-8 h-8 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
-        <h1 className="text-lg font-bold text-white">Finishing sign-in</h1>
-        <p className="mt-2 max-w-xs text-sm text-gray-400">One moment while Google sends you back to the app.</p>
+        <div className="mb-5"><TicketSpinner /></div>
+        <h1 className="font-display text-2xl text-brand-ink">Finishing sign-in</h1>
+        <p className="mt-2 max-w-xs text-sm text-brand-muted">One moment while Google sends you back to the app.</p>
       </div>
     )
   }
@@ -75,9 +76,12 @@ export default function Login() {
         transition={{ duration: 0.5 }}
         className="mb-12 text-center"
       >
-        <img src="/logo.png" alt="World Cup 26" className="w-44 mx-auto mb-5" />
-        <h1 className="text-3xl font-bold text-white">World Cup 26</h1>
-        <p className="text-gray-400 mt-2 text-sm">Invite-only. Sign in with your Google account.</p>
+        <div className="mb-5 flex justify-center">
+          <TicketMark className="h-24 w-24" />
+        </div>
+        <p className="ticket-meta mb-2 text-brand-stamp">Pool · admit one</p>
+        <h1 className="font-display text-4xl leading-none text-brand-ink">World Cup 26</h1>
+        <p className="text-brand-muted mt-2 text-sm">Invite-only. Sign in with your Google account.</p>
       </motion.div>
 
       {/* Sign in card */}
@@ -88,27 +92,27 @@ export default function Login() {
         className="w-full max-w-sm"
       >
         {needsSafari ? (
-          <div className="rounded-2xl border border-brand-border bg-brand-card p-5 shadow-2xl shadow-black/40">
+          <div className="ticket-card p-5">
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-accent/15">
-                <Share size={20} className="text-brand-accent" />
+              <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded border border-brand-border bg-brand-card">
+                <Share size={20} className="text-brand-stamp" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-white">Open in Safari</p>
-                <p className="mt-1 text-xs leading-5 text-gray-400">
+                <p className="font-display text-lg leading-none text-brand-ink">Open in Safari</p>
+                <p className="mt-1 text-xs leading-5 text-brand-muted">
                   Google sign-in does not work in this browser. Copy the link, open Safari, and paste it in the address bar.
                 </p>
                 <div className="mt-3 flex gap-2">
                   <button
                     onClick={copyAppLink}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-brand-accent px-3 py-2 text-xs font-bold text-brand-bg transition-opacity active:opacity-75"
+                    className="ticket-button inline-flex items-center gap-1.5 rounded bg-brand-accent px-3 py-2 text-brand-bg transition-opacity active:opacity-75"
                   >
                     <Copy size={13} />
                     Copy link
                   </button>
                 </div>
                 {copied && (
-                  <p role="status" aria-live="polite" className="mt-3 rounded-lg bg-emerald-400/10 px-3 py-2 text-xs font-semibold text-emerald-300">
+                  <p role="status" aria-live="polite" className="mt-3 rounded border border-emerald-700/30 bg-emerald-700/10 px-3 py-2 text-xs font-semibold text-emerald-700">
                     Link copied. Open Safari and paste it.
                   </p>
                 )}
@@ -120,7 +124,7 @@ export default function Login() {
             <button
               onClick={handleGoogleSignIn}
               disabled={signingIn}
-              className="w-full flex items-center justify-center gap-3 bg-white text-gray-900 font-semibold py-4 px-6 rounded-xl border border-white/20 hover:bg-gray-100 active:bg-gray-200 transition-colors disabled:opacity-60"
+              className="ticket-button w-full flex items-center justify-center gap-3 bg-brand-accent text-brand-bg py-4 px-6 rounded border border-brand-ink hover:bg-brand-accent-hover active:translate-y-px transition-colors disabled:opacity-60"
             >
               {/* Google logo */}
               <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
@@ -136,7 +140,7 @@ export default function Login() {
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="mt-4 text-center text-sm text-red-400"
+                className="mt-4 text-center text-sm text-brand-stamp"
               >
                 {error}
               </motion.p>

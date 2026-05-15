@@ -121,7 +121,7 @@ function ReactionButton({
       onPointerCancel={cancelLongPress}
       onContextMenu={(e) => e.preventDefault()}
       className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xl transition-transform active:scale-95 ${
-        isActive || isEmphasized ? 'bg-[#1d2630]' : 'bg-transparent'
+        isActive || isEmphasized ? 'bg-brand-stamp/10' : 'bg-transparent'
       }`}
     >
       {children}
@@ -161,7 +161,7 @@ function ReactionRail({
           size={22}
           strokeWidth={2}
           fill={currentReaction === LIKE_REACTION ? 'currentColor' : 'none'}
-          className={currentReaction === LIKE_REACTION ? 'text-[#6d63ff]' : 'text-white'}
+          className={currentReaction === LIKE_REACTION ? 'text-brand-stamp' : 'text-brand-ink'}
         />
       </ReactionButton>
     ) : (
@@ -194,11 +194,11 @@ function ReactionRail({
 
   return (
     <div className="relative flex shrink-0 items-center self-center">
-      <div className="flex items-center rounded-full border border-white/5 bg-black/50 p-0.5 shadow-lg shadow-black/30">
+      <div className="flex items-center rounded-full border border-brand-border bg-brand-card p-0.5 shadow-lg shadow-black/10">
         {slots}
       </div>
       {totalReactions > 1 && (
-        <span className="absolute left-1/2 top-full mt-0.5 -translate-x-1/2 text-sm font-medium leading-none text-white drop-shadow-[0_1px_1px_rgba(0,212,255,0.65)]">
+        <span className="absolute left-1/2 top-full mt-0.5 -translate-x-1/2 font-mono text-sm font-medium leading-none text-brand-stamp">
           {totalReactions}
         </span>
       )}
@@ -229,7 +229,7 @@ function MessageBubble({
     <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${isFirst ? 'mt-3' : 'mt-0.5'}`}>
       <div className={`flex flex-col ${isMe ? 'items-end max-w-[78%]' : 'items-start max-w-[88%]'}`}>
         {!isMe && isFirst && (
-          <span className="text-xs text-gray-400 ml-10 mb-1">{msg.authorName}</span>
+          <span className="ticket-meta ml-10 mb-1">{msg.authorName}</span>
         )}
 
         <div className={`flex items-start gap-2 w-full ${isMe ? 'justify-end' : 'justify-start'}`}>
@@ -256,25 +256,25 @@ function MessageBubble({
                 className={`rounded-2xl px-3.5 py-2.5 text-sm cursor-pointer active:opacity-75 transition-opacity select-none ${
                   isMe
                     ? 'bg-brand-accent text-brand-bg rounded-br-sm'
-                    : 'bg-brand-card border border-brand-border text-white rounded-bl-sm'
+                    : 'bg-brand-card border border-brand-border text-brand-ink rounded-bl-sm'
                 }`}
               >
                 {msg.replyTo && (
                   <div
                     className={`mb-2 pl-3 border-l-2 rounded-sm ${
-                      isMe ? 'border-brand-bg/40' : 'border-brand-accent/60'
+                      isMe ? 'border-brand-bg/40' : 'border-brand-stamp/60'
                     }`}
                   >
                     <p
                       className={`text-xs font-semibold mb-0.5 ${
-                        isMe ? 'text-brand-bg/70' : 'text-brand-accent'
+                        isMe ? 'text-brand-bg/70' : 'text-brand-stamp'
                       }`}
                     >
                       {msg.replyTo.authorName}
                     </p>
                     <p
                       className={`text-xs line-clamp-1 ${
-                        isMe ? 'text-brand-bg/60' : 'text-gray-400'
+                        isMe ? 'text-brand-bg/60' : 'text-brand-muted'
                       }`}
                     >
                       {msg.replyTo.text}
@@ -298,7 +298,7 @@ function MessageBubble({
               )}
             </div>
 
-            <span className="text-[10px] text-gray-500 mt-0.5 mx-1">{formatTime(msg.sentAt)}</span>
+            <span className="font-mono text-[10px] text-brand-faint mt-0.5 mx-1">{formatTime(msg.sentAt)}</span>
           </div>
         </div>
       </div>
@@ -472,10 +472,21 @@ export default function Chat() {
 
   return (
     <>
+      <div className="px-4 pt-2 pb-2">
+        <div className="mb-4">
+          <div className="ticket-meta mb-2 flex items-center gap-2 text-brand-stamp">
+            <span>★ Pool</span>
+            <span className="h-px flex-1 bg-brand-border" />
+            <span>{messages.length} messages</span>
+          </div>
+          <h1 className="font-display text-[2.2rem] leading-none text-brand-ink">Chat</h1>
+        </div>
+      </div>
+
       {/* Messages list */}
-      <div className="px-3 pt-2 pb-44">
+      <div className="px-3 pt-0 pb-44">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24 text-gray-500">
+          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-brand-border py-24 text-brand-faint">
             <MessageCircle size={44} className="mb-3 opacity-20" />
             <p className="text-sm">No messages yet.</p>
             <p className="text-sm">Start the chat!</p>
@@ -496,9 +507,9 @@ export default function Chat() {
               <div key={msg.id}>
                 {isFirstUnread && (
                   <div className="flex items-center gap-3 my-4">
-                    <div className="flex-1 h-px bg-brand-border" />
-                    <span className="text-xs text-gray-500 font-medium tracking-wide">Unread</span>
-                    <div className="flex-1 h-px bg-brand-border" />
+                    <div className="flex-1 border-t border-dashed border-brand-stamp/60" />
+                    <span className="ticket-pill ticket-pill-stamp">Unread</span>
+                    <div className="flex-1 border-t border-dashed border-brand-stamp/60" />
                   </div>
                 )}
                 <MessageBubble
@@ -574,7 +585,7 @@ export default function Chat() {
                   className="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-brand-border transition-colors text-left"
                 >
                   <Avatar url={u.avatarUrl} name={u.displayName} className="w-7 h-7" />
-                  <span className="text-white text-sm">{u.displayName}</span>
+                  <span className="text-brand-ink text-sm">{u.displayName}</span>
                 </button>
               ))}
             </motion.div>
@@ -591,14 +602,14 @@ export default function Chat() {
               className="overflow-hidden border-b border-brand-border"
             >
               <div className="flex items-center gap-2 px-4 py-2 bg-brand-card">
-                <CornerUpLeft size={14} className="text-brand-accent shrink-0" />
+                <CornerUpLeft size={14} className="text-brand-stamp shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-brand-accent font-medium">{replyTo.authorName}</p>
-                  <p className="text-xs text-gray-400 truncate">{replyTo.text}</p>
+                  <p className="text-xs text-brand-stamp font-medium">{replyTo.authorName}</p>
+                  <p className="text-xs text-brand-muted truncate">{replyTo.text}</p>
                 </div>
                 <button
                   onClick={() => setReplyTo(null)}
-                  className="text-gray-500 hover:text-white p-1 transition-colors"
+                  className="text-brand-faint hover:text-brand-ink p-1 transition-colors"
                 >
                   <X size={14} />
                 </button>
@@ -616,13 +627,13 @@ export default function Chat() {
             onKeyDown={handleKeyDown}
             placeholder="Message..."
             rows={1}
-            className="flex-1 bg-brand-card border border-brand-border rounded-2xl px-4 py-2.5 text-white text-sm placeholder-gray-500 resize-none focus:outline-none focus:border-brand-accent transition-colors"
+            className="flex-1 bg-brand-card border border-brand-border rounded-lg px-4 py-2.5 text-brand-ink text-sm placeholder-brand-faint resize-none focus:outline-none focus:border-brand-ink transition-colors"
             style={{ maxHeight: '120px', overflowY: 'auto' }}
           />
           <button
             onClick={handleSend}
             disabled={!text.trim() || sending}
-            className="w-10 h-10 rounded-full bg-brand-accent flex items-center justify-center shrink-0 disabled:opacity-30 transition-opacity active:scale-95"
+            className="w-10 h-10 rounded bg-brand-accent flex items-center justify-center shrink-0 disabled:opacity-30 transition-opacity active:scale-95"
           >
             <Send size={16} className="text-brand-bg translate-x-px" />
           </button>

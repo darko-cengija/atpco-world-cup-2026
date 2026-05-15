@@ -80,28 +80,29 @@ export default function Profile() {
         className="max-w-sm mx-auto"
       >
         {!isOnboarding && (
-          <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-white transition-colors mb-4">
+          <button onClick={() => navigate(-1)} className="mb-4 grid h-9 w-9 place-items-center rounded-lg border border-brand-border text-brand-ink hover:border-brand-ink transition-colors">
             <ArrowLeft size={22} />
           </button>
         )}
-        <h1 className="text-2xl font-bold text-white mb-1">
+        <p className="ticket-meta text-brand-stamp">{isOnboarding ? 'Admit one' : 'Account'}</p>
+        <h1 className="font-display text-[2.2rem] leading-none text-brand-ink mb-1">
           {isOnboarding ? 'Set Up Profile' : 'Your Profile'}
         </h1>
         {isOnboarding && (
-          <p className="text-gray-400 text-sm mb-6">
+          <p className="text-brand-muted text-sm mb-6">
             This is how everyone will see you. You can change it later.
           </p>
         )}
 
         {/* Avatar preview */}
         <div className="flex flex-col items-center my-8">
-          <div className="w-24 h-24 rounded-full bg-brand-card border-2 border-brand-border overflow-hidden flex items-center justify-center">
+          <div className="w-24 h-24 rounded-full bg-brand-ink text-brand-ticket ring-4 ring-brand-card overflow-hidden flex items-center justify-center shadow-lg">
             {selectedEmoji ? (
               <span className="text-5xl">{selectedEmoji}</span>
             ) : selectedAvatarUrl ? (
               <img src={selectedAvatarUrl} alt="avatar" className="w-full h-full object-cover" />
             ) : (
-              <span className="text-4xl font-bold text-brand-accent">
+              <span className="text-4xl font-bold text-brand-ticket">
                 {displayName?.[0]?.toUpperCase() ?? '?'}
               </span>
             )}
@@ -112,7 +113,7 @@ export default function Profile() {
         {googlePhoto && selectedEmoji && (
           <button
             onClick={() => setSelectedEmoji(null)}
-            className="w-full py-4 rounded-xl font-semibold text-base border border-brand-border text-gray-300 hover:border-gray-500 hover:text-white transition-colors mb-4"
+            className="ticket-button w-full py-4 rounded border border-brand-border text-brand-ink hover:border-brand-ink transition-colors mb-4"
           >
             Use Google photo
           </button>
@@ -120,7 +121,7 @@ export default function Profile() {
 
         {/* Emoji picker */}
         <div className="mb-6">
-          <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">
+          <p className="ticket-meta mb-2">
             {googlePhoto ? 'Or choose an avatar' : 'Choose an avatar'}
           </p>
           <div className="grid grid-cols-6 gap-2">
@@ -130,9 +131,9 @@ export default function Profile() {
                 onClick={() =>
                   setSelectedEmoji((prev) => (prev === emoji ? null : emoji))
                 }
-                className={`text-2xl py-2 rounded-lg border transition-colors ${
+                className={`text-2xl py-2 rounded-md border transition-colors ${
                   selectedEmoji === emoji
-                    ? 'border-brand-accent bg-brand-accent/10'
+                    ? 'border-brand-stamp bg-brand-stamp/10'
                     : 'border-brand-border bg-brand-card'
                 }`}
               >
@@ -144,7 +145,7 @@ export default function Profile() {
 
         {/* Display name */}
         <div className="mb-8">
-          <label className="block text-xs text-gray-500 uppercase tracking-wider mb-2">
+          <label className="ticket-meta mb-2 block">
             Your app name
           </label>
           <input
@@ -153,7 +154,7 @@ export default function Profile() {
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="e.g. Darko"
             maxLength={24}
-            className="w-full bg-brand-card border border-brand-border rounded-xl px-4 py-3 text-white placeholder-gray-600 focus:outline-none focus:border-brand-accent transition-colors"
+            className="w-full bg-brand-card border border-brand-border rounded px-4 py-3 text-brand-ink placeholder-brand-faint focus:outline-none focus:border-brand-ink transition-colors"
           />
         </div>
 
@@ -161,9 +162,9 @@ export default function Profile() {
         <button
           onClick={handleSave}
           disabled={saving || !displayName.trim() || (!isOnboarding && isSaved)}
-          className={`w-full py-4 rounded-xl font-semibold text-base transition-colors ${
+          className={`ticket-button w-full rounded py-4 transition-colors ${
             !isOnboarding && isSaved
-              ? 'bg-emerald-600 text-white'
+              ? 'bg-emerald-700 text-brand-ticket'
               : 'bg-brand-accent text-brand-bg hover:bg-brand-accent-hover disabled:opacity-50'
           }`}
         >
@@ -181,7 +182,7 @@ export default function Profile() {
         </button>
 
         {error && (
-          <p className="mt-4 text-center text-sm leading-5 text-red-400">
+          <p className="mt-4 text-center text-sm leading-5 text-brand-stamp">
             {error}
           </p>
         )}
@@ -191,7 +192,7 @@ export default function Profile() {
             {user?.role === 'admin' && (
               <button
                 onClick={() => navigate('/invite')}
-                className="w-full mt-4 py-3 text-sm text-gray-400 hover:text-white transition-colors flex items-center justify-center gap-2 border border-brand-border rounded-xl"
+                className="ticket-button w-full mt-4 py-3 text-brand-ink hover:border-brand-ink transition-colors flex items-center justify-center gap-2 border border-brand-border rounded"
               >
                 <UserPlus size={15} />
                 Invite Player
@@ -199,7 +200,7 @@ export default function Profile() {
             )}
             <button
               onClick={handleSignOut}
-              className="w-full mt-4 py-3 text-sm text-gray-500 hover:text-red-400 transition-colors flex items-center justify-center gap-2"
+              className="ticket-button w-full mt-4 py-3 text-brand-faint hover:text-brand-stamp transition-colors flex items-center justify-center gap-2"
             >
               <LogOut size={15} />
               Sign Out

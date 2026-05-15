@@ -148,16 +148,16 @@ export function InstallAppPrompt() {
   if (installed) {
     return (
       <div className="fixed inset-0 z-50 mx-auto flex max-w-[430px] flex-col items-center justify-center bg-brand-bg px-6 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-400/15">
-          <CheckCircle2 size={34} className="text-emerald-300" />
+        <div className="flex h-16 w-16 items-center justify-center rounded border border-emerald-700/30 bg-emerald-700/10">
+          <CheckCircle2 size={34} className="text-emerald-700" />
         </div>
-        <h2 className="mt-5 text-2xl font-bold text-white">App Installed</h2>
-        <p className="mt-3 text-sm leading-6 text-gray-400">
+        <h2 className="mt-5 font-display text-3xl leading-none text-brand-ink">App Installed</h2>
+        <p className="mt-3 text-sm leading-6 text-brand-muted">
           Close this tab and open the World Cup 26 icon from your Home Screen.
         </p>
         <button
           onClick={() => setInstalled(false)}
-          className="mt-6 rounded-lg px-4 py-2 text-sm font-semibold text-gray-500"
+          className="ticket-button mt-6 rounded px-4 py-2 text-brand-faint"
         >
           Continue in browser
         </button>
@@ -173,43 +173,43 @@ export function InstallAppPrompt() {
 
   return (
     <div className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[430px] px-3 pb-[calc(env(safe-area-inset-bottom)+12px)]">
-      <div className="rounded-2xl border border-brand-border bg-brand-card shadow-2xl shadow-black/40">
+      <div className="ticket-card">
         <div className="flex items-start gap-3 p-4">
-          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-accent/15">
+          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded border border-brand-border bg-brand-card">
             {isIosSafari || isIosOther ? (
-              <Share size={20} className="text-brand-accent" />
+              <Share size={20} className="text-brand-stamp" />
             ) : isManual ? (
-              <MoreVertical size={20} className="text-brand-accent" />
+              <MoreVertical size={20} className="text-brand-stamp" />
             ) : (
-              <Download size={20} className="text-brand-accent" />
+              <Download size={20} className="text-brand-stamp" />
             )}
           </div>
 
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-white">
+            <p className="font-display text-lg leading-none text-brand-ink">
               {isIosSafari ? 'Add to Home Screen' : isIosOther ? 'Open in Safari' : 'Install World Cup 26'}
             </p>
 
             {isIosSafari ? (
-              <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs leading-5 text-gray-400">
+              <ol className="mt-2 list-decimal space-y-1 pl-4 text-xs leading-5 text-brand-muted">
                 <li>Tap the Share icon in the toolbar.</li>
                 <li>
-                  Choose <span className="font-semibold text-gray-200">Add to Home Screen</span>.
+                  Choose <span className="font-semibold text-brand-ink">Add to Home Screen</span>.
                 </li>
                 <li>
-                  Confirm with <span className="font-semibold text-gray-200">Add</span>.
+                  Confirm with <span className="font-semibold text-brand-ink">Add</span>.
                 </li>
               </ol>
             ) : isIosOther ? (
-              <p className="mt-1 text-xs leading-5 text-gray-400">
+              <p className="mt-1 text-xs leading-5 text-brand-muted">
                 You can install the app only from Safari. Copy the link, open Safari, and paste it in the address bar.
               </p>
             ) : isManual ? (
-              <p className="mt-1 text-xs leading-5 text-gray-400">
+              <p className="mt-1 text-xs leading-5 text-brand-muted">
                 Chrome did not show the automatic install prompt. Tap the menu in the top right, then Install app.
               </p>
             ) : (
-              <p className="mt-1 text-xs leading-5 text-gray-400">
+              <p className="mt-1 text-xs leading-5 text-brand-muted">
                 {canPrompt
                   ? 'Add the app to your Home Screen and open it with one tap.'
                   : 'Chrome is preparing the install prompt. The button will activate shortly.'}
@@ -221,11 +221,11 @@ export function InstallAppPrompt() {
                 <button
                   onClick={install}
                   disabled={!canPrompt || installing}
-                  className="rounded-lg bg-brand-accent px-3 py-2 text-xs font-bold text-brand-bg transition-opacity active:opacity-75 disabled:opacity-60"
+                  className="ticket-button rounded bg-brand-accent px-3 py-2 text-brand-bg transition-opacity active:opacity-75 disabled:opacity-60"
                 >
                   {installing ? 'Opening...' : canPrompt ? 'Install' : 'Preparing...'}
                 </button>
-                <button onClick={dismiss} className="rounded-lg px-3 py-2 text-xs font-semibold text-gray-400">
+                <button onClick={dismiss} className="ticket-button rounded px-3 py-2 text-brand-muted">
                   Later
                 </button>
               </div>
@@ -235,12 +235,12 @@ export function InstallAppPrompt() {
               <div className="mt-3 flex gap-2">
                 <button
                   onClick={reloadForInstallPrompt}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-brand-accent px-3 py-2 text-xs font-bold text-brand-bg transition-opacity active:opacity-75"
+                  className="ticket-button inline-flex items-center gap-1.5 rounded bg-brand-accent px-3 py-2 text-brand-bg transition-opacity active:opacity-75"
                 >
                   <RotateCw size={13} />
                   Try again
                 </button>
-                <button onClick={dismiss} className="rounded-lg px-3 py-2 text-xs font-semibold text-gray-400">
+                <button onClick={dismiss} className="ticket-button rounded px-3 py-2 text-brand-muted">
                   Later
                 </button>
               </div>
@@ -249,7 +249,7 @@ export function InstallAppPrompt() {
             {isIosSafari && (
               <button
                 onClick={dismiss}
-                className="mt-3 rounded-lg bg-brand-accent px-3 py-2 text-xs font-bold text-brand-bg transition-opacity active:opacity-75"
+                className="ticket-button mt-3 rounded bg-brand-accent px-3 py-2 text-brand-bg transition-opacity active:opacity-75"
               >
                 Got it
               </button>
@@ -260,17 +260,17 @@ export function InstallAppPrompt() {
                 <div className="mt-3 flex gap-2">
                   <button
                     onClick={copyInstallLink}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-brand-accent px-3 py-2 text-xs font-bold text-brand-bg transition-opacity active:opacity-75"
+                    className="ticket-button inline-flex items-center gap-1.5 rounded bg-brand-accent px-3 py-2 text-brand-bg transition-opacity active:opacity-75"
                   >
                     <Copy size={13} />
                     Copy link
                   </button>
-                  <button onClick={dismiss} className="rounded-lg px-3 py-2 text-xs font-semibold text-gray-400">
+                  <button onClick={dismiss} className="ticket-button rounded px-3 py-2 text-brand-muted">
                     Got it
                   </button>
                 </div>
                 {copied && (
-                  <p role="status" aria-live="polite" className="mt-3 rounded-lg bg-emerald-400/10 px-3 py-2 text-xs font-semibold text-emerald-300">
+                  <p role="status" aria-live="polite" className="mt-3 rounded border border-emerald-700/30 bg-emerald-700/10 px-3 py-2 text-xs font-semibold text-emerald-700">
                     Link copied. Open Safari and paste it.
                   </p>
                 )}
@@ -278,7 +278,7 @@ export function InstallAppPrompt() {
             )}
           </div>
 
-          <button onClick={dismiss} className="-mr-1 -mt-1 p-1 text-gray-500 transition-colors hover:text-white">
+          <button onClick={dismiss} className="-mr-1 -mt-1 p-1 text-brand-faint transition-colors hover:text-brand-ink">
             <X size={16} />
           </button>
         </div>

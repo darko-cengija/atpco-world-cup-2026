@@ -21,6 +21,7 @@ import { Avatar } from '@/components/Avatar'
 import { getCountryName } from '@/lib/translations'
 import { HOME_MATCH_WINDOW } from '@/lib/config'
 import type { Match, Prediction, AppUser, PredictionOutcome } from '@/types'
+import { TicketSpinner } from '@/components/TicketMark'
 
 async function findNextUnpredictedMatch(currentMatchId: string, userId: string): Promise<string | null> {
   const [matchSnap, predSnap] = await Promise.all([
@@ -190,14 +191,14 @@ export default function Prediction() {
   if (loading) {
     return (
       <div className="min-h-screen bg-brand-bg flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
+        <TicketSpinner label="Loading match" />
       </div>
     )
   }
 
   if (!match) {
     return (
-      <div className="min-h-screen bg-brand-bg flex items-center justify-center text-gray-400">
+      <div className="min-h-screen bg-brand-bg flex items-center justify-center text-brand-muted">
         Match not found.
       </div>
     )
@@ -214,62 +215,79 @@ export default function Prediction() {
   return (
     <div className="min-h-screen bg-brand-bg">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 pt-10 pb-4">
-        <button onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/')} className="text-gray-400 hover:text-white transition-colors">
+      <div className="flex items-center gap-3 px-4 pt-8 pb-4">
+        <button onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/')} className="grid h-9 w-9 place-items-center rounded-lg border border-brand-border text-brand-ink transition-colors hover:border-brand-ink">
           <ArrowLeft size={22} />
         </button>
-        <h1 className="text-lg font-bold text-white">Prediction</h1>
-        {isLocked && <Lock size={16} className="text-yellow-500 ml-auto" />}
+        <div>
+          <p className="ticket-meta">Match ticket</p>
+          <h1 className="font-display text-xl leading-none text-brand-ink">Prediction</h1>
+        </div>
+        {isLocked && <Lock size={16} className="text-brand-gold ml-auto" />}
       </div>
 
       <div className="px-4 space-y-6">
         {/* Match card */}
-        <div className="bg-brand-card border border-brand-border rounded-xl p-5">
-          <p className="text-xs text-gray-400 text-center mb-4">
-            {match.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            {' · '}
-            {match.date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-            {' · '}
-            {match.venue}
-          </p>
+        <div className="ticket-card">
+          <div className="border-b border-dashed border-brand-border px-4 py-3 text-center">
+            <p className="ticket-meta text-brand-stamp">★ {match.stage || 'Group Stage'}</p>
+            <p className="mt-1 font-mono text-[0.68rem] tabular-nums text-brand-muted">
+              {match.date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              {' · '}
+              {match.date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+              {' · '}
+              {match.venue}
+            </p>
+          </div>
 
-          <div className="flex items-center justify-between mb-6">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-5">
             <div className="flex-1 flex flex-col items-center gap-1">
-              <span className="text-5xl">{match.homeTeam.flag}</span>
-              <span className="font-semibold text-white text-sm text-center">{getCountryName(match.homeTeam.name)}</span>
+              <span className="grid h-12 min-w-16 place-items-center rounded border border-brand-border bg-brand-card px-2 text-5xl shadow-sm">{match.homeTeam.flag}</span>
+              <span className="ticket-meta mt-2">{match.homeTeamId.slice(0, 3)}</span>
+              <span className="font-display text-lg leading-tight text-brand-ink text-center">{getCountryName(match.homeTeam.name)}</span>
             </div>
             {isLocked && match.homeScore !== null && match.awayScore !== null ? (
               <div className="flex flex-col items-center px-3">
                 {match.status === 'live' && (
-                  <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-0.5">Live</span>
+                  <span className="ticket-pill ticket-pill-stamp mb-1">Live</span>
                 )}
-                <span className="text-white font-bold text-2xl tabular-nums">{match.homeScore} – {match.awayScore}</span>
+                <span className="font-display text-4xl leading-none text-brand-ink tabular-nums">{match.homeScore}:{match.awayScore}</span>
               </div>
             ) : (
-              <span className="text-gray-600 font-bold text-lg px-3">VS</span>
+              <span className="grid h-11 w-11 place-items-center rounded-full border-2 border-brand-ink bg-brand-card font-display text-base text-brand-ink">vs</span>
             )}
             <div className="flex-1 flex flex-col items-center gap-1">
-              <span className="text-5xl">{match.awayTeam.flag}</span>
-              <span className="font-semibold text-white text-sm text-center">{getCountryName(match.awayTeam.name)}</span>
+              <span className="grid h-12 min-w-16 place-items-center rounded border border-brand-border bg-brand-card px-2 text-5xl shadow-sm">{match.awayTeam.flag}</span>
+              <span className="ticket-meta mt-2">{match.awayTeamId.slice(0, 3)}</span>
+              <span className="font-display text-lg leading-tight text-brand-ink text-center">{getCountryName(match.awayTeam.name)}</span>
             </div>
           </div>
 
           {/* Outcome selector */}
+          <div className="border-t border-dashed border-brand-border px-4 py-4">
+            <div className="mb-3 flex items-baseline justify-between gap-2">
+              <p className="ticket-meta text-brand-muted">{knockout ? 'Pick the winner' : 'Pick the outcome'}</p>
+              <p className="ticket-meta">{knockout ? '4 options' : '3 options'}</p>
+            </div>
           <div className="flex gap-2">
             {outcomes.map((o) => (
               <button
                 key={o}
                 onClick={() => !isLocked && setSelectedOutcome(o)}
                 disabled={isLocked}
-                className={`flex-1 py-4 rounded-xl font-bold text-lg transition-colors border ${
+                className={`relative flex-1 rounded-md border px-2 py-3 transition-colors ${
                   selectedOutcome === o
-                    ? 'bg-brand-accent text-brand-bg border-brand-accent'
-                    : 'bg-brand-bg text-gray-400 border-brand-border hover:border-gray-500 hover:text-white'
+                    ? 'bg-brand-accent text-brand-bg border-brand-accent shadow-lg shadow-brand-ink/15'
+                    : 'bg-brand-card text-brand-ink border-brand-border hover:border-brand-ink'
                 } disabled:opacity-40 disabled:cursor-not-allowed`}
               >
-                {o}
+                <span className="block font-display text-3xl leading-none tabular-nums">{o}</span>
+                <span className="ticket-meta block text-[0.5rem]">
+                  {o === '1' ? 'Home' : o === '2' ? 'Away' : 'Draw'}
+                </span>
               </button>
             ))}
+          </div>
           </div>
         </div>
 
@@ -279,11 +297,11 @@ export default function Prediction() {
             onClick={handleSubmit}
             disabled={saving || navigating || !isDirty}
             whileTap={{ scale: 0.97 }}
-            className={`w-full py-4 rounded-xl font-semibold text-base transition-colors ${
+            className={`ticket-button w-full rounded py-4 transition-colors ${
               navigating
-                ? 'bg-emerald-600 text-white'
+                ? 'bg-emerald-700 text-brand-ticket'
                 : isSaved
-                ? 'bg-emerald-600 text-white'
+                ? 'bg-emerald-700 text-brand-ticket'
                 : 'bg-brand-accent text-brand-bg hover:bg-brand-accent-hover disabled:opacity-50'
             }`}
           >
@@ -299,12 +317,12 @@ export default function Prediction() {
 
         {isLocked && (
           savedOutcome ? (
-            <div className="w-full py-4 rounded-xl bg-emerald-900/40 border border-emerald-700 text-emerald-400 font-semibold text-center flex items-center justify-center gap-2">
+            <div className="ticket-card flex w-full items-center justify-center gap-2 px-4 py-4 font-semibold text-emerald-700">
               <CheckCircle2 size={18} />
               You predicted {savedOutcome} · Locked
             </div>
           ) : (
-            <div className="w-full py-4 rounded-xl bg-brand-border text-gray-500 font-semibold text-center">
+            <div className="w-full rounded border border-dashed border-brand-border py-4 text-center font-semibold text-brand-faint">
               No prediction · Locked
             </div>
           )
@@ -313,7 +331,7 @@ export default function Prediction() {
         {/* Other players' predictions */}
         {allPredictions.length > 0 && (
           <div>
-            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            <h2 className="ticket-meta mb-3 text-brand-muted">
               Everyone's Predictions
             </h2>
             <div className="space-y-2">
@@ -325,17 +343,17 @@ export default function Prediction() {
                 return (
                   <div
                     key={p.id}
-                    className={`flex items-center justify-between bg-brand-card border rounded-lg px-4 py-3 ${
+                    className={`flex items-center justify-between bg-brand-card border rounded-md px-4 py-3 ${
                       isMe ? 'border-brand-accent/50' : 'border-brand-border'
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <Avatar url={avatarUrl} name={displayName} className="w-8 h-8" />
-                      <span className="text-sm font-medium text-white">
+                      <span className="text-sm font-medium text-brand-ink">
                         {isMe ? `${displayName} (you)` : displayName}
                       </span>
                     </div>
-                    <span className="font-bold text-white text-base">{p.outcome}</span>
+                    <span className="ticket-stamp !text-sm">{p.outcome}</span>
                   </div>
                 )
               })}

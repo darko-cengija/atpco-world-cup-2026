@@ -14,6 +14,7 @@ import { db } from '@/firebase'
 import { getCountryName } from '@/lib/translations'
 import { useWinningChances } from '@/hooks/useWinningChances'
 import type { PredictionOutcome, Team } from '@/types'
+import { TicketSpinner } from '@/components/TicketMark'
 
 interface TeamStats {
   team: Team
@@ -54,8 +55,8 @@ function computeOutcome(
   return 'X'
 }
 
-const TH = 'px-2 py-2 font-medium text-[10px] uppercase tracking-wider text-gray-500 whitespace-nowrap'
-const TD = 'px-2 py-3 text-sm text-center text-gray-300'
+const TH = 'px-2 py-2 font-mono font-bold text-[9px] uppercase tracking-[0.14em] text-brand-faint whitespace-nowrap'
+const TD = 'px-2 py-3 font-mono text-xs text-center text-brand-muted tabular-nums'
 
 function sortTeamStats(a: TeamStats, b: TeamStats) {
   if (b.points !== a.points) return b.points - a.points
@@ -237,7 +238,7 @@ export default function PlayerPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
+        <TicketSpinner label="Loading player" />
       </div>
     )
   }
@@ -273,14 +274,15 @@ export default function PlayerPage() {
   return (
     <div className={showingProjection ? 'pb-20' : ''}>
       <div className="flex items-center gap-3 px-4 pt-2 pb-2">
-        <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-white transition-colors">
+        <button onClick={() => navigate(-1)} className="grid h-9 w-9 place-items-center rounded-lg border border-brand-border text-brand-ink hover:border-brand-ink transition-colors">
           <ArrowLeft size={22} />
         </button>
       </div>
 
       <div className="flex flex-col items-center gap-3 px-4 pb-6">
         <PlayerAvatar url={avatarUrl} name={displayName} />
-        <h1 className="text-2xl font-bold text-white">{displayName}</h1>
+        <p className="ticket-meta text-brand-stamp">★ Player dossier</p>
+        <h1 className="font-display text-[2.2rem] leading-none text-brand-ink">{displayName}</h1>
       </div>
 
       <div className="px-4 mb-8">
@@ -289,11 +291,11 @@ export default function PlayerPage() {
 
       {!showingProjection && (
         <div className="px-4 pb-8">
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Predictions</h2>
+          <h2 className="ticket-meta mb-3 text-brand-muted">Predictions</h2>
           {predictions.length === 0 ? (
-            <p className="text-gray-500 text-center py-6 text-sm">No finished matches yet.</p>
+            <p className="rounded-xl border border-dashed border-brand-border text-brand-faint text-center py-6 text-sm">No finished matches yet.</p>
           ) : (
-            <div className="bg-brand-card border border-brand-border rounded-xl overflow-hidden">
+            <div className="ticket-card">
               {predictions.map((p) => (
                 <PredictionRow key={p.matchId} p={p} />
               ))}
@@ -303,8 +305,8 @@ export default function PlayerPage() {
       )}
 
       {showingProjection && (
-        <div className="fixed bottom-20 left-3 right-3 z-40 rounded-lg border border-red-500/50 bg-red-950 px-3 py-3 text-white shadow-2xl">
-          <p className="text-xs font-black uppercase tracking-wide">
+        <div className="fixed bottom-20 left-3 right-3 z-40 rounded-md border border-brand-stamp/50 bg-brand-stamp px-3 py-3 text-brand-ticket shadow-2xl">
+          <p className="font-mono text-xs font-black uppercase tracking-wide">
             Simulation: average of 10,000 scenarios for remaining matches
           </p>
         </div>
@@ -315,13 +317,13 @@ export default function PlayerPage() {
 
 function PlayerAvatar({ url, name }: { url: string | null; name: string }) {
   return (
-    <div className="w-24 h-24 rounded-full bg-brand-border flex items-center justify-center overflow-hidden shrink-0">
+    <div className="w-24 h-24 rounded-full bg-brand-ink text-brand-ticket ring-4 ring-brand-card flex items-center justify-center overflow-hidden shrink-0 shadow-lg">
       {url?.startsWith('emoji:') ? (
         <span className="text-5xl leading-none">{url.replace('emoji:', '')}</span>
       ) : url ? (
         <img src={url} alt={name} className="w-full h-full object-cover" />
       ) : (
-        <span className="text-4xl font-bold text-brand-accent">{name[0]?.toUpperCase()}</span>
+        <span className="text-4xl font-bold text-brand-ticket">{name[0]?.toUpperCase()}</span>
       )}
     </div>
   )
@@ -337,7 +339,7 @@ function TeamTable({
   projected: boolean
 }) {
   return (
-    <div className="bg-brand-card border border-brand-border rounded-xl overflow-hidden">
+    <div className="ticket-card">
       <table className="w-full border-collapse">
         <colgroup>
           <col className="w-8" />                                     {/* flag */}
@@ -372,7 +374,7 @@ function TeamTable({
             <tr key={s.team.id} className="border-b border-brand-border">
               <td className="pl-3 pr-1 py-3 text-lg">{s.team.flag}</td>
               <td className="pl-1 pr-2 py-3">
-                <span className="text-sm font-semibold text-white truncate block">
+                <span className="font-display text-base leading-none text-brand-ink truncate block">
                   {getCountryName(s.team.name)}
                 </span>
               </td>
@@ -383,7 +385,7 @@ function TeamTable({
               <td className={`${TD} hidden sm:table-cell`}>{formatTableNumber(s.gf, projected)}</td>
               <td className={`${TD} hidden sm:table-cell`}>{formatTableNumber(s.ga, projected)}</td>
               <td className={TD}>{formatGoalDifference(s.gd, projected)}</td>
-              <td className={`${TD} font-bold text-white pr-3`}>{formatTableNumber(s.points, projected)}</td>
+              <td className={`${TD} font-display text-lg font-normal text-brand-ink pr-3`}>{formatTableNumber(s.points, projected)}</td>
             </tr>
           ))}
 
@@ -391,16 +393,16 @@ function TeamTable({
             <tr className="bg-brand-accent/5">
               <td className="pl-3 pr-1 py-3"></td>
               <td className="pl-1 pr-2 py-3">
-                <span className="text-sm font-bold text-brand-accent">Total</span>
+                <span className="ticket-meta text-brand-stamp">Total</span>
               </td>
-              <td className={`${TD} font-bold text-white`}>{formatTableNumber(totals.played, projected)}</td>
-              <td className={`${TD} font-bold text-white hidden min-[390px]:table-cell`}>{formatTableNumber(totals.won, projected)}</td>
-              <td className={`${TD} font-bold text-white hidden min-[430px]:table-cell`}>{formatTableNumber(totals.drawn, projected)}</td>
-              <td className={`${TD} font-bold text-white hidden sm:table-cell`}>{formatTableNumber(totals.lost, projected)}</td>
-              <td className={`${TD} font-bold text-white hidden sm:table-cell`}>{formatTableNumber(totals.gf, projected)}</td>
-              <td className={`${TD} font-bold text-white hidden sm:table-cell`}>{formatTableNumber(totals.ga, projected)}</td>
-              <td className={`${TD} font-bold text-white`}>{formatGoalDifference(totals.gd, projected)}</td>
-              <td className={`${TD} font-bold text-white pr-3`}>{formatTableNumber(totals.points, projected)}</td>
+              <td className={`${TD} font-bold text-brand-ink`}>{formatTableNumber(totals.played, projected)}</td>
+              <td className={`${TD} font-bold text-brand-ink hidden min-[390px]:table-cell`}>{formatTableNumber(totals.won, projected)}</td>
+              <td className={`${TD} font-bold text-brand-ink hidden min-[430px]:table-cell`}>{formatTableNumber(totals.drawn, projected)}</td>
+              <td className={`${TD} font-bold text-brand-ink hidden sm:table-cell`}>{formatTableNumber(totals.lost, projected)}</td>
+              <td className={`${TD} font-bold text-brand-ink hidden sm:table-cell`}>{formatTableNumber(totals.gf, projected)}</td>
+              <td className={`${TD} font-bold text-brand-ink hidden sm:table-cell`}>{formatTableNumber(totals.ga, projected)}</td>
+              <td className={`${TD} font-bold text-brand-ink`}>{formatGoalDifference(totals.gd, projected)}</td>
+              <td className={`${TD} font-display text-lg font-normal text-brand-ink pr-3`}>{formatTableNumber(totals.points, projected)}</td>
             </tr>
           )}
         </tbody>
@@ -415,21 +417,21 @@ function PredictionRow({ p }: { p: PastPrediction }) {
 
   return (
     <div className="grid grid-cols-[3rem_1fr_auto] items-center gap-2 px-3 py-2 border-b border-brand-border last:border-0 text-xs">
-      <span className="text-gray-500 tabular-nums">{dateStr}</span>
+      <span className="font-mono text-brand-faint tabular-nums">{dateStr}</span>
 
       <div className="flex items-center justify-center gap-2 min-w-0">
         <span className="text-base shrink-0">{p.homeTeam.flag}</span>
-        <span className="font-bold text-white tabular-nums">
+        <span className="font-display text-base text-brand-ink tabular-nums">
           {p.homeScore}–{p.awayScore}
         </span>
         <span className="text-base shrink-0">{p.awayTeam.flag}</span>
       </div>
 
       <div className="flex items-center gap-2 justify-end">
-        <span className="font-semibold text-brand-accent w-5 text-center">{p.actualOutcome}</span>
-        <span className="text-gray-600">·</span>
+        <span className="font-semibold text-brand-stamp w-5 text-center">{p.actualOutcome}</span>
+        <span className="text-brand-faint">·</span>
         <span className={`flex items-center gap-1 font-semibold ${
-          !p.playerOutcome ? 'text-gray-600' : correct ? 'text-emerald-400' : 'text-red-400'
+          !p.playerOutcome ? 'text-brand-faint' : correct ? 'text-emerald-700' : 'text-brand-stamp'
         }`}>
           <span className="w-5 text-center">{p.playerOutcome ?? '–'}</span>
           <span className="w-3 inline-flex justify-center">

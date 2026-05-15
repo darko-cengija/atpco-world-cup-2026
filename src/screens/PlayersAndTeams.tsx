@@ -19,6 +19,7 @@ import { fifaMemberAssociations, type FifaMemberAssociation } from '@/data/fifaM
 import { getReplacementOptions } from '@/lib/teamReplacementOptions'
 import { getCountryName } from '@/lib/translations'
 import type { AppUser, Team } from '@/types'
+import { TicketSpinner } from '@/components/TicketMark'
 
 interface PlayerRow {
   user: AppUser
@@ -199,7 +200,7 @@ export default function PlayersAndTeams() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-2 border-brand-accent border-t-transparent rounded-full animate-spin" />
+        <TicketSpinner label="Loading players" />
       </div>
     )
   }
@@ -209,22 +210,22 @@ export default function PlayersAndTeams() {
     {/* Stop-game confirmation modal */}
     {showStopModal && (
       <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-6">
-        <div className="bg-brand-card border border-brand-border rounded-2xl p-6 max-w-sm w-full">
-          <h2 className="text-white font-bold text-lg mb-2">Stop tracking?</h2>
-          <p className="text-gray-400 text-sm mb-6">
+        <div className="ticket-card p-6 max-w-sm w-full">
+          <h2 className="font-display text-2xl leading-none text-brand-ink mb-2">Stop tracking?</h2>
+          <p className="text-brand-muted text-sm mb-6">
             This will reset the draw, return lists to the default ranking, and delete assigned teams.
           </p>
           <div className="flex gap-3">
             <button
               onClick={() => setShowStopModal(false)}
-              className="flex-1 py-3 rounded-xl border border-brand-border text-gray-300 font-semibold hover:text-white transition-colors"
+              className="ticket-button flex-1 py-3 rounded border border-brand-border text-brand-ink hover:border-brand-ink transition-colors"
             >
               No
             </button>
             <button
               onClick={handleStopGame}
               disabled={togglingGame}
-              className="flex-1 py-3 rounded-xl bg-red-600 text-white font-semibold hover:bg-red-500 transition-colors disabled:opacity-50"
+              className="ticket-button flex-1 py-3 rounded bg-brand-stamp text-brand-ticket hover:bg-brand-stamp-hover transition-colors disabled:opacity-50"
             >
               Yes
             </button>
@@ -234,18 +235,19 @@ export default function PlayersAndTeams() {
     )}
     <div className="px-4 py-2">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-white">Players and Teams</h1>
-        <p className="text-gray-400 text-sm mt-1">
+        <p className="ticket-meta text-brand-stamp">★ Owners</p>
+        <h1 className="font-display text-[2.2rem] leading-none text-brand-ink">Players and Teams</h1>
+        <p className="text-brand-muted text-sm mt-1">
           {isAdmin ? 'Assign teams to players' : 'Assigned teams'}
         </p>
       </div>
 
       {/* Admin-only: game start toggle */}
       {isAdmin && (
-        <div className="bg-brand-card border border-brand-border rounded-xl p-4 mb-3">
+        <div className="ticket-card p-4 mb-3">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-sm font-semibold text-gray-300">Game started</span>
+              <span className="ticket-meta text-brand-muted">Game started</span>
               {gameStartedAt ? (
                 <p className="text-xs text-gray-500 mt-0.5">
                   Since {gameStartedAt.toDate().toLocaleDateString('en-US', {
@@ -260,7 +262,7 @@ export default function PlayersAndTeams() {
             <button
               onClick={handleGameToggle}
               disabled={togglingGame}
-              className={`relative w-12 h-6 rounded-full transition-colors duration-200 disabled:opacity-50 ${
+                  className={`relative w-12 h-6 rounded-full border border-brand-border transition-colors duration-200 disabled:opacity-50 ${
                 gameStartedAt ? 'bg-brand-accent' : 'bg-brand-border'
               }`}
             >
@@ -282,7 +284,7 @@ export default function PlayersAndTeams() {
             setReplaceNotice(null)
             setShowReplaceModal(true)
           }}
-          className="mb-6 flex w-full items-center justify-center gap-2 rounded-xl border border-brand-border bg-brand-card py-3 text-sm font-bold text-white transition-colors hover:border-gray-600"
+          className="ticket-button mb-6 flex w-full items-center justify-center gap-2 rounded border border-brand-border bg-brand-card py-3 text-brand-ink transition-colors hover:border-brand-ink"
         >
           <Repeat2 size={16} />
           Replace Team
@@ -302,23 +304,23 @@ export default function PlayersAndTeams() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="bg-brand-card border border-brand-border rounded-xl p-4"
+                className="ticket-card p-4"
               >
                 {/* Player header */}
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-9 h-9 rounded-full bg-brand-border flex items-center justify-center overflow-hidden shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-brand-ink text-brand-ticket ring-2 ring-brand-card flex items-center justify-center overflow-hidden shrink-0">
                     {avatarUrl?.startsWith('emoji:') ? (
                       <span className="text-lg">{avatarUrl.replace('emoji:', '')}</span>
                     ) : avatarUrl ? (
                       <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" />
                     ) : (
-                      <span className="text-sm font-bold text-brand-accent">
+                      <span className="text-sm font-bold text-brand-ticket">
                         {displayName?.[0]?.toUpperCase() ?? '?'}
                       </span>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="font-semibold text-white">{displayName}</span>
+                    <span className="font-display text-lg leading-none text-brand-ink">{displayName}</span>
                     <span className="text-xs text-gray-500 ml-2">
                       {row.teams.length}/{config.teamsPerPlayer ?? row.teams.length} teams
                     </span>
@@ -357,15 +359,15 @@ export default function PlayersAndTeams() {
                 {/* Assigned teams */}
                 <div className="flex flex-wrap gap-2 mb-3">
                   {row.teams.length === 0 && (
-                    <span className="text-xs text-gray-600 italic">No assigned teams</span>
+                    <span className="text-xs text-brand-faint italic">No assigned teams</span>
                   )}
                   {row.teams.map((team) => (
                     <div
                       key={team.id}
-                      className="flex items-center gap-1 bg-brand-bg border border-brand-border rounded-lg px-2 py-1"
+                      className="flex items-center gap-1 bg-brand-card border border-brand-border rounded-md px-2 py-1"
                     >
                       <span className="text-base">{team.flag}</span>
-                      <span className="text-xs text-gray-300">{getCountryName(team.name)}</span>
+                      <span className="text-xs text-brand-muted">{getCountryName(team.name)}</span>
                       {isAdmin && (
                         <button
                           onClick={() => removeTeam(row.user.uid, team.id)}
@@ -455,11 +457,11 @@ function ReplaceTeamModal({
       >
         <div className="mb-4 flex items-center gap-2">
           <Repeat2 size={18} className="text-brand-accent" />
-          <h2 className="text-lg font-bold text-white">Replace Team</h2>
+          <h2 className="font-display text-xl leading-none text-brand-ink">Replace Team</h2>
         </div>
 
         {error && (
-          <div className="mb-3 rounded-lg border border-red-800/70 bg-red-950/40 px-3 py-2 text-xs text-red-300">
+          <div className="mb-3 border-l-4 border-brand-stamp bg-brand-stamp/10 px-3 py-2 text-xs text-brand-stamp">
             {error}
           </div>
         )}
@@ -469,13 +471,13 @@ function ReplaceTeamModal({
           </div>
         )}
 
-        <label className="mb-2 block text-xs font-semibold uppercase text-gray-500">
+        <label className="ticket-meta mb-2 block">
           Dropped team
         </label>
         <select
           value={droppedTeamId}
           onChange={(event) => setDroppedTeamId(event.target.value)}
-          className="mb-4 w-full rounded-lg border border-brand-border bg-brand-bg px-3 py-3 text-sm font-semibold text-white focus:border-brand-accent focus:outline-none"
+          className="mb-4 w-full rounded border border-brand-border bg-brand-card px-3 py-3 text-sm font-semibold text-brand-ink focus:border-brand-ink focus:outline-none"
         >
           {activeTeams.map((team) => (
             <option key={team.id} value={team.id}>
@@ -484,28 +486,28 @@ function ReplaceTeamModal({
           ))}
         </select>
 
-        <label className="mb-2 block text-xs font-semibold uppercase text-gray-500">
+        <label className="ticket-meta mb-2 block">
           New team
         </label>
         {selectedReplacement && (
-          <div className="mb-3 rounded-xl border-2 border-brand-accent bg-brand-accent/10 p-3">
-            <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-brand-accent">
+          <div className="mb-3 rounded-md border-2 border-brand-stamp bg-brand-stamp/10 p-3">
+            <p className="ticket-meta mb-1 text-brand-stamp">
               Selected replacement
             </p>
             <div className="flex items-center justify-between gap-3">
               <span className="flex min-w-0 items-center gap-3">
                 <span className="text-3xl">{selectedReplacement.flag}</span>
                 <span className="min-w-0">
-                  <span className="block truncate text-base font-bold text-white">
+                  <span className="block truncate font-display text-lg leading-none text-brand-ink">
                     {getCountryName(selectedReplacement.name)}
                   </span>
-                  <span className="block text-xs text-gray-400">{selectedReplacement.confederation}</span>
+                  <span className="block text-xs text-brand-muted">{selectedReplacement.confederation}</span>
                 </span>
               </span>
               <button
                 type="button"
                 onClick={() => setReplacementId('')}
-                className="shrink-0 rounded-lg border border-brand-border px-3 py-2 text-xs font-semibold text-gray-300 transition-colors hover:text-white"
+                className="ticket-button shrink-0 rounded border border-brand-border px-3 py-2 text-brand-ink transition-colors hover:border-brand-ink"
               >
                 Change
               </button>
@@ -517,11 +519,11 @@ function ReplaceTeamModal({
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder={selectedReplacement ? 'Search for another replacement...' : 'Search FIFA members...'}
-          className="mb-3 w-full rounded-lg border border-brand-border bg-brand-bg px-3 py-3 text-sm text-white placeholder-gray-600 focus:border-brand-accent focus:outline-none"
+          className="mb-3 w-full rounded border border-brand-border bg-brand-card px-3 py-3 text-sm text-brand-ink placeholder-brand-faint focus:border-brand-ink focus:outline-none"
         />
-        <div className="mb-4 max-h-56 overflow-y-auto rounded-xl border border-brand-border">
+        <div className="mb-4 max-h-56 overflow-y-auto rounded-md border border-brand-border">
           {filteredReplacements.length === 0 ? (
-            <p className="px-4 py-4 text-sm text-gray-600">No available teams.</p>
+            <p className="px-4 py-4 text-sm text-brand-faint">No available teams.</p>
           ) : (
             filteredReplacements.map((team) => (
               <button
@@ -530,17 +532,17 @@ function ReplaceTeamModal({
                 onClick={() => selectReplacement(team)}
                 className={`flex w-full items-center justify-between border-b px-4 py-3 text-left transition-colors last:border-0 ${
                   team.id === replacementId
-                    ? 'border-brand-accent/40 bg-brand-accent/10'
-                    : 'border-brand-border hover:bg-brand-bg'
+                    ? 'border-brand-stamp/40 bg-brand-stamp/10'
+                    : 'border-brand-border hover:bg-brand-border'
                 }`}
               >
                 <span className="flex min-w-0 items-center gap-3">
                   <span className="text-2xl">{team.flag}</span>
                   <span className="min-w-0">
-                    <span className="block truncate text-sm font-semibold text-white">
+                    <span className="block truncate text-sm font-semibold text-brand-ink">
                       {getCountryName(team.name)}
                     </span>
-                    <span className="block text-xs text-gray-500">{team.confederation}</span>
+                    <span className="block text-xs text-brand-faint">{team.confederation}</span>
                   </span>
                 </span>
                 {team.id === replacementId && <CheckMark />}
@@ -549,7 +551,7 @@ function ReplaceTeamModal({
           )}
         </div>
 
-        <label className="mb-2 block text-xs font-semibold uppercase text-gray-500">
+        <label className="ticket-meta mb-2 block">
           FIFA rank
         </label>
         <input
@@ -559,17 +561,17 @@ function ReplaceTeamModal({
           value={fifaRank}
           onChange={(event) => setFifaRank(event.target.value)}
           placeholder="Optional"
-          className="mb-2 w-full rounded-lg border border-brand-border bg-brand-bg px-3 py-3 text-sm text-white placeholder-gray-600 focus:border-brand-accent focus:outline-none"
+          className="mb-2 w-full rounded border border-brand-border bg-brand-card px-3 py-3 text-sm text-brand-ink placeholder-brand-faint focus:border-brand-ink focus:outline-none"
         />
         {!rankValid && <p className="mb-3 text-xs text-red-300">Rank must be a positive whole number.</p>}
 
         {selectedDroppedTeam && selectedReplacement && (
-          <div className="mb-4 rounded-xl border border-brand-border bg-brand-bg p-3 text-sm text-gray-300">
-            <span className="font-semibold text-white">
+          <div className="mb-4 rounded-md border border-brand-border bg-brand-card p-3 text-sm text-brand-muted">
+            <span className="font-semibold text-brand-ink">
               {selectedDroppedTeam.flag} {getCountryName(selectedDroppedTeam.name)}
             </span>
-            <span className="px-2 text-gray-500">→</span>
-            <span className="font-semibold text-white">
+            <span className="px-2 text-brand-faint">→</span>
+            <span className="font-semibold text-brand-ink">
               {selectedReplacement.flag} {getCountryName(selectedReplacement.name)}
             </span>
           </div>
@@ -588,7 +590,7 @@ function ReplaceTeamModal({
           type="button"
           onClick={onClose}
           disabled={busy}
-          className="mt-3 w-full rounded-lg py-3 text-sm font-semibold text-gray-500 transition-colors hover:text-white disabled:opacity-50"
+          className="ticket-button mt-3 w-full rounded py-3 text-brand-faint transition-colors hover:text-brand-ink disabled:opacity-50"
         >
           Cancel
         </button>
@@ -599,7 +601,7 @@ function ReplaceTeamModal({
 
 function CheckMark() {
   return (
-    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-accent text-xs font-black text-brand-bg">
+    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-stamp text-xs font-black text-brand-ticket">
       ✓
     </span>
   )
@@ -629,7 +631,7 @@ function TeamPicker({
     return (
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-1 text-xs text-brand-accent hover:text-white transition-colors mt-1"
+        className="ticket-button mt-1 flex items-center gap-1 text-brand-stamp hover:text-brand-ink transition-colors"
       >
         <Plus size={13} />
         Add Team
@@ -638,18 +640,18 @@ function TeamPicker({
   }
 
   return (
-    <div className="mt-2 border border-brand-border rounded-xl overflow-hidden">
+    <div className="mt-2 overflow-hidden rounded-md border border-brand-border">
       <input
         autoFocus
         type="text"
         placeholder="Search teams..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        className="w-full bg-brand-bg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none border-b border-brand-border"
+        className="w-full bg-brand-card px-3 py-2 text-sm text-brand-ink placeholder-brand-faint focus:outline-none border-b border-brand-border"
       />
       <div className="max-h-40 overflow-y-auto">
         {unassigned.length === 0 && (
-          <p className="text-xs text-gray-600 px-3 py-2 italic">No available teams</p>
+          <p className="text-xs text-brand-faint px-3 py-2 italic">No available teams</p>
         )}
         {unassigned.map((team) => (
           <button
@@ -659,7 +661,7 @@ function TeamPicker({
               setSearch('')
               setOpen(false)
             }}
-            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:bg-brand-border hover:text-white transition-colors text-left"
+            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-brand-muted hover:bg-brand-border hover:text-brand-ink transition-colors text-left"
           >
             <span>{team.flag}</span>
             <span>{getCountryName(team.name)}</span>
@@ -668,7 +670,7 @@ function TeamPicker({
       </div>
       <button
         onClick={() => setOpen(false)}
-        className="w-full py-2 text-xs text-gray-600 hover:text-gray-400 border-t border-brand-border transition-colors"
+        className="ticket-button w-full py-2 text-brand-faint hover:text-brand-ink border-t border-brand-border transition-colors"
       >
         Cancel
       </button>
