@@ -1,0 +1,58 @@
+
+    <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024"
+      viewBox="0 0 512 512" role="img" aria-label="World Cup 26 Admit One Stub icon">
+      <defs>
+    <pattern id="grain-a" width="3" height="3" patternUnits="userSpaceOnUse">
+      <circle cx="1" cy="1" r="0.55" fill="#000" opacity="0.045"/>
+    </pattern>
+    <pattern id="grain-b" width="7" height="7" patternUnits="userSpaceOnUse">
+      <circle cx="3.5" cy="3.5" r="0.65" fill="#000" opacity="0.025"/>
+    </pattern>
+  </defs>
+
+    <rect width="512" height="512" fill="#f6efdb"/>
+    <rect width="512" height="512" fill="url(#grain-a)"/>
+    <rect width="512" height="512" fill="url(#grain-b)"/>
+
+    <rect x="36" y="36" width="440" height="440" rx="11" fill="none"
+      stroke="#0f3a35" stroke-width="5.6"/>
+
+    <line x1="194.56" y1="36" x2="194.56" y2="476"
+      stroke="#0f3a35" stroke-opacity="0.7" stroke-width="4.1"
+      stroke-linecap="round" stroke-dasharray="8 11"/>
+
+    <circle cx="194.56" cy="0" r="20.5" fill="#e6dcc5"/>
+    <circle cx="194.56" cy="512" r="20.5" fill="#e6dcc5"/>
+
+
+          <text x="97.28" y="229" text-anchor="middle"
+            font-family='"JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace' font-size="36"
+            font-weight="800" letter-spacing="1.5" fill="#0f3a35">ADMIT</text>
+          <text x="97.28" y="278" text-anchor="middle"
+            font-family='"JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace' font-size="36"
+            font-weight="800" letter-spacing="1.5" fill="#0f3a35">ONE</text>
+
+
+
+          <line x1="61.28" y1="302" x2="133.28" y2="302"
+            stroke="#0f3a35" stroke-opacity="0.4" stroke-width="2.6"/>
+          <text x="97.28" y="333" text-anchor="middle"
+            font-family='"JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace' font-size="20.5"
+            font-weight="800" letter-spacing="2" fill="#a8392b">WC26</text>
+
+          <text x="353.28" y="68" text-anchor="middle"
+            font-family='"JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace' font-size="16.5"
+            font-weight="600" letter-spacing="3" fill="#0f3a35"
+            fill-opacity="0.55">MATCH - POOL</text>
+          <text x="353.28" y="455" text-anchor="middle"
+            font-family='"JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace' font-size="16.5"
+            font-weight="600" letter-spacing="3" fill="#0f3a35"
+            fill-opacity="0.55">TWENTY SIX</text>
+
+
+    <text x="353.28" y="280" text-anchor="middle"
+      dominant-baseline="central" font-family='"DM Serif Display", "Times New Roman", Georgia, serif'
+      font-size="246" font-weight="500"
+      letter-spacing="-4" fill="#0f3a35">26</text>
+
+    </svg>
