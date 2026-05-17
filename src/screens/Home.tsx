@@ -7,7 +7,7 @@ import { useUpcomingMatches } from '@/hooks/useUpcomingMatches'
 import { HOME_MATCH_WINDOW } from '@/lib/config'
 import { useTeamOwners } from '@/hooks/useTeamOwners'
 import { useUserPredictions } from '@/hooks/useUserPredictions'
-import { getCountryName } from '@/lib/translations'
+import { getCountryName, getTeamNameWithSoftBreaks } from '@/lib/translations'
 import { useDrawConfig } from '@/hooks/useDrawConfig'
 import { TicketSpinner } from '@/components/TicketMark'
 import type { Match } from '@/types'
@@ -119,7 +119,7 @@ export default function Home() {
                 <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2 px-4 py-5">
                   <TeamCol
                     flag={match.homeTeam.flag}
-                    name={getCountryName(match.homeTeam.name)}
+                    name={getTeamNameWithSoftBreaks(getCountryName(match.homeTeam.name))}
                     owners={homeOwners}
                   />
                   {isLocked && match.homeScore !== null && match.awayScore !== null ? (
@@ -131,7 +131,7 @@ export default function Home() {
                   )}
                   <TeamCol
                     flag={match.awayTeam.flag}
-                    name={getCountryName(match.awayTeam.name)}
+                    name={getTeamNameWithSoftBreaks(getCountryName(match.awayTeam.name))}
                     owners={awayOwners}
                     align="right"
                   />
@@ -215,7 +215,7 @@ function TeamCol({
   return (
     <div className={`min-w-0 flex-1 flex flex-col ${align === 'right' ? 'items-end' : 'items-start'}`}>
       <span className="mb-2 grid h-9 min-w-12 place-items-center rounded border border-brand-border bg-brand-card px-2 text-3xl shadow-sm">{flag}</span>
-      <span className={`max-w-full break-words font-display text-xl leading-tight text-brand-ink ${textAlign}`}>{name}</span>
+      <span className={`max-w-full break-normal font-display text-xl leading-tight text-brand-ink hyphens-manual ${textAlign}`} lang="en">{name}</span>
       {owners.length > 0 && (
         <span className={`mt-1 max-w-full break-words text-sm font-bold leading-tight text-brand-stamp ${textAlign}`}>
           {owners.join(', ')}

@@ -30,7 +30,9 @@ const BASE = `/v1/projects/${PROJECT_ID}/databases/(default)/documents`
 const FIREBASE_CLIENT_ID = '563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com'
 const FIREBASE_CLIENT_SECRET = 'j9iVZfS8kkCEFUPaAeJV0sAi'
 const API_HOST = 'v3.football.api-sports.io'
-const API_REQUEST_BUDGET = 95
+const API_REQUEST_BUDGET = 3500
+const MIN_LIVE_SYNC_PERIOD_SECONDS = 10
+const DEFAULT_LIVE_SYNC_PERIOD_SECONDS = 60
 const LIVE_LOOKBACK_MINUTES = 180
 const LIVE_LOOKAHEAD_MINUTES = 30
 
@@ -79,6 +81,7 @@ const RESET_COLLECTIONS = [
 const RESET_DOCS = [
   'draw/state',
   'stats/winningChances',
+  'config/liveSyncLease',
 ]
 
 function usageAndExit() {
@@ -394,47 +397,58 @@ function mergePollingWindows(windows) {
   return merged
 }
 
-function pollingWindowMinutes(windows) {
-  return windows.reduce((total, window) => total + Math.ceil((window.endMs - window.startMs) / 60000), 0)
+function pollingWindowSeconds(windows) {
+  return windows.reduce((total, window) => total + Math.ceil((window.endMs - window.startMs) / 1000), 0)
 }
 
-function estimatedApiCalls(windows, periodMinutes) {
-  if (periodMinutes <= 0) return Number.POSITIVE_INFINITY
+function estimatedApiCalls(windows, periodSeconds) {
+  if (periodSeconds <= 0) return Number.POSITIVE_INFINITY
   return windows.reduce((total, window) => {
-    const minutes = Math.ceil((window.endMs - window.startMs) / 60000)
-    return total + Math.ceil(minutes / periodMinutes)
+    const seconds = Math.ceil((window.endMs - window.startMs) / 1000)
+    return total + Math.ceil(seconds / periodSeconds)
   }, 0)
 }
 
 function syncPeriodForPollingWindows(windows) {
   const mergedWindows = mergePollingWindows(windows)
-  const minutes = pollingWindowMinutes(mergedWindows)
-  if (minutes === 0) {
+  const seconds = pollingWindowSeconds(mergedWindows)
+  if (seconds === 0) {
     return {
       mergedWindowCount: 0,
+      pollingWindowSeconds: 0,
       pollingWindowMinutes: 0,
       estimatedApiCalls: 0,
-      syncPeriodMinutes: 1,
+      calculatedSyncPeriodSeconds: DEFAULT_LIVE_SYNC_PERIOD_SECONDS,
+      syncPeriodSeconds: DEFAULT_LIVE_SYNC_PERIOD_SECONDS,
+      syncPeriodMinutes: DEFAULT_LIVE_SYNC_PERIOD_SECONDS / 60,
     }
   }
 
-  for (let period = 1; period <= minutes; period++) {
+  for (let period = 1; period <= seconds; period++) {
     const calls = estimatedApiCalls(mergedWindows, period)
     if (calls <= API_REQUEST_BUDGET) {
+      const syncPeriodSeconds = Math.max(period, MIN_LIVE_SYNC_PERIOD_SECONDS)
       return {
         mergedWindowCount: mergedWindows.length,
-        pollingWindowMinutes: minutes,
-        estimatedApiCalls: calls,
-        syncPeriodMinutes: period,
+        pollingWindowSeconds: seconds,
+        pollingWindowMinutes: seconds / 60,
+        estimatedApiCalls: estimatedApiCalls(mergedWindows, syncPeriodSeconds),
+        calculatedSyncPeriodSeconds: period,
+        syncPeriodSeconds,
+        syncPeriodMinutes: syncPeriodSeconds / 60,
       }
     }
   }
 
+  const syncPeriodSeconds = Math.max(seconds, MIN_LIVE_SYNC_PERIOD_SECONDS)
   return {
     mergedWindowCount: mergedWindows.length,
-    pollingWindowMinutes: minutes,
-    estimatedApiCalls: estimatedApiCalls(mergedWindows, minutes),
-    syncPeriodMinutes: minutes,
+    pollingWindowSeconds: seconds,
+    pollingWindowMinutes: seconds / 60,
+    estimatedApiCalls: estimatedApiCalls(mergedWindows, syncPeriodSeconds),
+    calculatedSyncPeriodSeconds: seconds,
+    syncPeriodSeconds,
+    syncPeriodMinutes: syncPeriodSeconds / 60,
   }
 }
 
@@ -679,15 +693,19 @@ async function seedFirestore(token, teams, selectedTeams, matches, syncPeriod) {
       season: league.season,
       name: league.name,
     })),
+    syncPeriodSeconds: syncPeriod.syncPeriodSeconds,
     syncPeriodMinutes: syncPeriod.syncPeriodMinutes,
     syncPeriodUpdatedAt: new Date(),
     syncPeriodRegularMatches: syncPeriod.regularMatches,
     syncPeriodKnockoutMatches: syncPeriod.knockoutMatches,
+    syncPeriodPollingWindowSeconds: syncPeriod.pollingWindowSeconds,
     syncPeriodPollingWindowMinutes: syncPeriod.pollingWindowMinutes,
     syncPeriodPollingWindowCount: syncPeriod.regularMatches + syncPeriod.knockoutMatches,
     syncPeriodMergedWindowCount: syncPeriod.mergedWindowCount,
     syncPeriodEstimatedApiCalls: syncPeriod.estimatedApiCalls,
     syncPeriodRequestBudget: API_REQUEST_BUDGET,
+    syncPeriodMinimumSeconds: MIN_LIVE_SYNC_PERIOD_SECONDS,
+    syncPeriodCalculatedSeconds: syncPeriod.calculatedSyncPeriodSeconds,
     lastLiveSyncAt: null,
     gameStartedAt: null,
   }, token)
@@ -717,7 +735,7 @@ async function main() {
   console.log(`Draw-eligible teams: ${selectedTeams.length}`)
   console.log(`Matches involving selected teams: ${matches.length}`)
   console.log(
-    `Initial sync period: ${syncPeriod.syncPeriodMinutes} min (${syncPeriod.estimatedApiCalls} estimated API calls across ${syncPeriod.pollingWindowMinutes} polling minutes, ${syncPeriod.regularMatches} regular, ${syncPeriod.knockoutMatches} knockout in next 24h)`,
+    `Initial sync period: ${syncPeriod.syncPeriodSeconds}s (${syncPeriod.estimatedApiCalls} estimated API calls across ${syncPeriod.pollingWindowSeconds}s of polling windows, ${syncPeriod.regularMatches} regular, ${syncPeriod.knockoutMatches} knockout in next 24h)`,
   )
 
   if (selectedTeams.length !== SELECTED_TEAMS.length) {

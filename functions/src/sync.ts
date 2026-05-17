@@ -5,7 +5,11 @@ const MLS_LEAGUE_ID = 253
 const MLS_SEASON = 2026
 const EPL_LEAGUE_ID = 39
 const EPL_SEASON = 2025
-const API_REQUEST_BUDGET = 95
+const API_REQUEST_BUDGET = 3500
+const MIN_LIVE_SYNC_PERIOD_SECONDS = 10
+const DEFAULT_LIVE_SYNC_PERIOD_SECONDS = 60
+const LIVE_SYNC_LOOP_DURATION_MS = 55 * 1000
+const LIVE_SYNC_LEASE_MS = 70 * 1000
 const LIVE_LOOKBACK_MINUTES = 180
 const LIVE_LOOKAHEAD_MINUTES = 30
 const BATCH_LIMIT = 450
@@ -17,6 +21,7 @@ interface ApiFootballFixture {
     status: {
       short: string
       elapsed: number | null
+      extra?: number | null
     }
     venue?: {
       name?: string | null
@@ -59,12 +64,23 @@ interface LeagueConfig {
   name: string
 }
 
-type SyncSkipReason = 'missing_api_key' | 'inactive_competition' | 'no_candidates' | 'throttled'
+type SyncSkipReason = 'missing_api_key' | 'inactive_competition' | 'no_candidates' | 'throttled' | 'lease_held'
 
 const LEAGUE_DEFAULTS = new Map<number, LeagueConfig>([
   [MLS_LEAGUE_ID, { id: MLS_LEAGUE_ID, season: MLS_SEASON, name: 'MLS' }],
   [EPL_LEAGUE_ID, { id: EPL_LEAGUE_ID, season: EPL_SEASON, name: 'EPL' }],
 ])
+
+interface LiveSyncResult {
+  skipped?: SyncSkipReason
+  updated: number
+  apiRequestsUsed: number
+  commits?: number
+  syncPeriodSeconds?: number
+  syncPeriodMinutes?: number
+  secondsSinceLast?: number
+  throttleSecondsRemaining?: number
+}
 
 function mapStatus(short: string) {
   if (['FT', 'AET', 'PEN'].includes(short)) return 'finished'
@@ -115,48 +131,73 @@ function mergePollingWindows(windows: PollWindow[]) {
   return merged
 }
 
-function pollingWindowMinutes(windows: PollWindow[]) {
-  return windows.reduce((total, window) => total + Math.ceil((window.endMs - window.startMs) / 60000), 0)
+function pollingWindowSeconds(windows: PollWindow[]) {
+  return windows.reduce((total, window) => total + Math.ceil((window.endMs - window.startMs) / 1000), 0)
 }
 
-function estimatedApiCalls(windows: PollWindow[], periodMinutes: number) {
-  if (periodMinutes <= 0) return Number.POSITIVE_INFINITY
+function estimatedApiCalls(windows: PollWindow[], periodSeconds: number) {
+  if (periodSeconds <= 0) return Number.POSITIVE_INFINITY
   return windows.reduce((total, window) => {
-    const minutes = Math.ceil((window.endMs - window.startMs) / 60000)
-    return total + Math.ceil(minutes / periodMinutes)
+    const seconds = Math.ceil((window.endMs - window.startMs) / 1000)
+    return total + Math.ceil(seconds / periodSeconds)
   }, 0)
 }
 
 function syncPeriodForPollingWindows(windows: PollWindow[]) {
   const mergedWindows = mergePollingWindows(windows)
-  const minutes = pollingWindowMinutes(mergedWindows)
-  if (minutes === 0) {
+  const seconds = pollingWindowSeconds(mergedWindows)
+  if (seconds === 0) {
     return {
       mergedWindows,
+      pollingWindowSeconds: 0,
       pollingWindowMinutes: 0,
       estimatedApiCalls: 0,
-      syncPeriodMinutes: 1,
+      calculatedSyncPeriodSeconds: DEFAULT_LIVE_SYNC_PERIOD_SECONDS,
+      syncPeriodSeconds: DEFAULT_LIVE_SYNC_PERIOD_SECONDS,
+      syncPeriodMinutes: DEFAULT_LIVE_SYNC_PERIOD_SECONDS / 60,
     }
   }
 
-  for (let period = 1; period <= minutes; period++) {
+  for (let period = 1; period <= seconds; period++) {
     const calls = estimatedApiCalls(mergedWindows, period)
     if (calls <= API_REQUEST_BUDGET) {
+      const syncPeriodSeconds = Math.max(period, MIN_LIVE_SYNC_PERIOD_SECONDS)
       return {
         mergedWindows,
-        pollingWindowMinutes: minutes,
-        estimatedApiCalls: calls,
-        syncPeriodMinutes: period,
+        pollingWindowSeconds: seconds,
+        pollingWindowMinutes: seconds / 60,
+        estimatedApiCalls: estimatedApiCalls(mergedWindows, syncPeriodSeconds),
+        calculatedSyncPeriodSeconds: period,
+        syncPeriodSeconds,
+        syncPeriodMinutes: syncPeriodSeconds / 60,
       }
     }
   }
 
+  const syncPeriodSeconds = Math.max(seconds, MIN_LIVE_SYNC_PERIOD_SECONDS)
   return {
     mergedWindows,
-    pollingWindowMinutes: minutes,
-    estimatedApiCalls: estimatedApiCalls(mergedWindows, minutes),
-    syncPeriodMinutes: minutes,
+    pollingWindowSeconds: seconds,
+    pollingWindowMinutes: seconds / 60,
+    estimatedApiCalls: estimatedApiCalls(mergedWindows, syncPeriodSeconds),
+    calculatedSyncPeriodSeconds: seconds,
+    syncPeriodSeconds,
+    syncPeriodMinutes: syncPeriodSeconds / 60,
   }
+}
+
+function syncPeriodSecondsFromConfig(config: admin.firestore.DocumentData) {
+  const configuredSeconds = Number(config.syncPeriodSeconds)
+  if (Number.isFinite(configuredSeconds) && configuredSeconds > 0) {
+    return Math.max(Math.ceil(configuredSeconds), MIN_LIVE_SYNC_PERIOD_SECONDS)
+  }
+
+  const configuredMinutes = Number(config.syncPeriodMinutes)
+  if (Number.isFinite(configuredMinutes) && configuredMinutes > 0) {
+    return Math.max(Math.ceil(configuredMinutes * 60), MIN_LIVE_SYNC_PERIOD_SECONDS)
+  }
+
+  return DEFAULT_LIVE_SYNC_PERIOD_SECONDS
 }
 
 function getQualifier(fixture: ApiFootballFixture): 'home' | 'away' | null {
@@ -268,6 +309,7 @@ function fixtureToMatchPatch(fixture: ApiFootballFixture) {
     awayScore: fixtureScore(fixture, 'away'),
     qualifier: getQualifier(fixture),
     minute: status === 'live' ? fixture.fixture.status.elapsed : null,
+    stoppageTime: status === 'live' ? fixture.fixture.status.extra ?? null : null,
     statusShort: status === 'live' ? fixture.fixture.status.short : null,
     apiFootballFixtureId: fixture.fixture.id,
     leagueId: fixture.league.id,
@@ -354,7 +396,11 @@ export async function calculateSyncPeriod(now = new Date()) {
       skipped: 'inactive_competition' as SyncSkipReason,
       regularMatches: 0,
       knockoutMatches: 0,
-      syncPeriodMinutes: 1,
+      pollingWindowSeconds: 0,
+      pollingWindowMinutes: 0,
+      estimatedApiCalls: 0,
+      syncPeriodSeconds: DEFAULT_LIVE_SYNC_PERIOD_SECONDS,
+      syncPeriodMinutes: DEFAULT_LIVE_SYNC_PERIOD_SECONDS / 60,
     }
   }
 
@@ -390,28 +436,34 @@ export async function calculateSyncPeriod(now = new Date()) {
   const syncPeriod = syncPeriodForPollingWindows(pollingWindows)
 
   await db.doc('config/app').set({
+    syncPeriodSeconds: syncPeriod.syncPeriodSeconds,
     syncPeriodMinutes: syncPeriod.syncPeriodMinutes,
     syncPeriodUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
     syncPeriodWindowStart: admin.firestore.Timestamp.fromDate(windowStart),
     syncPeriodWindowEnd: admin.firestore.Timestamp.fromDate(windowEnd),
     syncPeriodRegularMatches: regularMatches,
     syncPeriodKnockoutMatches: knockoutMatches,
+    syncPeriodPollingWindowSeconds: syncPeriod.pollingWindowSeconds,
     syncPeriodPollingWindowMinutes: syncPeriod.pollingWindowMinutes,
     syncPeriodPollingWindowCount: pollingWindows.length,
     syncPeriodMergedWindowCount: syncPeriod.mergedWindows.length,
     syncPeriodEstimatedApiCalls: syncPeriod.estimatedApiCalls,
     syncPeriodRequestBudget: API_REQUEST_BUDGET,
+    syncPeriodMinimumSeconds: MIN_LIVE_SYNC_PERIOD_SECONDS,
+    syncPeriodCalculatedSeconds: syncPeriod.calculatedSyncPeriodSeconds,
   }, { merge: true })
 
   console.log(
-    `Sync period: regular=${regularMatches}, knockout=${knockoutMatches}, pollMinutes=${syncPeriod.pollingWindowMinutes}, estimatedCalls=${syncPeriod.estimatedApiCalls}, period=${syncPeriod.syncPeriodMinutes}`,
+    `Sync period: regular=${regularMatches}, knockout=${knockoutMatches}, pollSeconds=${syncPeriod.pollingWindowSeconds}, estimatedCalls=${syncPeriod.estimatedApiCalls}, period=${syncPeriod.syncPeriodSeconds}s`,
   )
 
   return {
     regularMatches,
     knockoutMatches,
+    pollingWindowSeconds: syncPeriod.pollingWindowSeconds,
     pollingWindowMinutes: syncPeriod.pollingWindowMinutes,
     estimatedApiCalls: syncPeriod.estimatedApiCalls,
+    syncPeriodSeconds: syncPeriod.syncPeriodSeconds,
     syncPeriodMinutes: syncPeriod.syncPeriodMinutes,
   }
 }
@@ -422,7 +474,7 @@ function fixtureIdFromMatch(docSnap: admin.firestore.QueryDocumentSnapshot) {
   return Number.isInteger(id) ? id : null
 }
 
-export async function syncLiveFixtures(apiKey: string | null, now = new Date()) {
+export async function syncLiveFixtures(apiKey: string | null, now = new Date()): Promise<LiveSyncResult> {
   if (!apiKey) return { skipped: 'missing_api_key' as SyncSkipReason, updated: 0, apiRequestsUsed: 0 }
 
   const db = admin.firestore()
@@ -433,19 +485,21 @@ export async function syncLiveFixtures(apiKey: string | null, now = new Date()) 
     return { skipped: 'inactive_competition' as SyncSkipReason, updated: 0, apiRequestsUsed: 0 }
   }
 
-  const syncPeriodMinutes = typeof config.syncPeriodMinutes === 'number' && config.syncPeriodMinutes > 0
-    ? config.syncPeriodMinutes
-    : 1
+  const syncPeriodSeconds = syncPeriodSecondsFromConfig(config)
   const lastSyncAt = config.lastLiveSyncAt
   if (lastSyncAt instanceof admin.firestore.Timestamp) {
-    const minutesSinceLast = (now.getTime() - lastSyncAt.toDate().getTime()) / 60000
-    if (minutesSinceLast < syncPeriodMinutes) {
-      console.log(`Throttled: ${minutesSinceLast.toFixed(1)}min since last live sync, period=${syncPeriodMinutes}min`)
+    const secondsSinceLast = (now.getTime() - lastSyncAt.toDate().getTime()) / 1000
+    if (secondsSinceLast < syncPeriodSeconds) {
+      const throttleSecondsRemaining = Math.ceil(syncPeriodSeconds - secondsSinceLast)
+      console.log(`Throttled: ${secondsSinceLast.toFixed(1)}s since last live sync, period=${syncPeriodSeconds}s`)
       return {
         skipped: 'throttled' as SyncSkipReason,
         updated: 0,
         apiRequestsUsed: 0,
-        syncPeriodMinutes,
+        syncPeriodSeconds,
+        syncPeriodMinutes: syncPeriodSeconds / 60,
+        secondsSinceLast,
+        throttleSecondsRemaining,
       }
     }
   }
@@ -466,7 +520,13 @@ export async function syncLiveFixtures(apiKey: string | null, now = new Date()) 
     .filter((id): id is number => id !== null)
 
   if (fixtureIds.length === 0) {
-    return { skipped: 'no_candidates' as SyncSkipReason, updated: 0, apiRequestsUsed: 0, syncPeriodMinutes }
+    return {
+      skipped: 'no_candidates' as SyncSkipReason,
+      updated: 0,
+      apiRequestsUsed: 0,
+      syncPeriodSeconds,
+      syncPeriodMinutes: syncPeriodSeconds / 60,
+    }
   }
 
   const body = await apiFootballGet<ApiFootballFixture>(apiKey, '/fixtures', {
@@ -479,11 +539,114 @@ export async function syncLiveFixtures(apiKey: string | null, now = new Date()) 
     lastLiveSyncFixtureCount: body.response.length,
   }, { merge: true })
 
-  console.log(`Live sync: ${body.response.length} fixture(s), ${commits} batch(es), period=${syncPeriodMinutes}min`)
+  console.log(`Live sync: ${body.response.length} fixture(s), ${commits} batch(es), period=${syncPeriodSeconds}s`)
   return {
     updated: body.response.length,
     apiRequestsUsed: 1,
     commits,
-    syncPeriodMinutes,
+    syncPeriodSeconds,
+    syncPeriodMinutes: syncPeriodSeconds / 60,
+  }
+}
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function acquireLiveSyncLease(db: admin.firestore.Firestore, ownerId: string, now: Date) {
+  const leaseRef = db.doc('config/liveSyncLease')
+  const leaseExpiresAt = admin.firestore.Timestamp.fromDate(new Date(now.getTime() + LIVE_SYNC_LEASE_MS))
+
+  return await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(leaseRef)
+    const expiresAt = snap.data()?.expiresAt
+
+    if (expiresAt instanceof admin.firestore.Timestamp && expiresAt.toDate().getTime() > now.getTime()) {
+      return false
+    }
+
+    transaction.set(leaseRef, {
+      ownerId,
+      acquiredAt: admin.firestore.FieldValue.serverTimestamp(),
+      expiresAt: leaseExpiresAt,
+    }, { merge: true })
+    return true
+  })
+}
+
+async function releaseLiveSyncLease(db: admin.firestore.Firestore, ownerId: string) {
+  const leaseRef = db.doc('config/liveSyncLease')
+
+  await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(leaseRef)
+    if (snap.data()?.ownerId !== ownerId) return
+
+    transaction.set(leaseRef, {
+      expiresAt: admin.firestore.Timestamp.fromDate(new Date()),
+      releasedAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true })
+  })
+}
+
+export async function syncLiveFixturesLoop(apiKey: string | null, now = new Date()) {
+  if (!apiKey) return { skipped: 'missing_api_key' as SyncSkipReason, updated: 0, apiRequestsUsed: 0, attempts: 0 }
+
+  const db = admin.firestore()
+  const ownerId = `${now.getTime()}-${Math.random().toString(36).slice(2)}`
+  const acquired = await acquireLiveSyncLease(db, ownerId, now)
+  if (!acquired) return { skipped: 'lease_held' as SyncSkipReason, updated: 0, apiRequestsUsed: 0, attempts: 0 }
+
+  const deadlineMs = now.getTime() + LIVE_SYNC_LOOP_DURATION_MS
+  let attempts = 0
+  let updated = 0
+  let apiRequestsUsed = 0
+  let commits = 0
+  let syncPeriodSeconds = DEFAULT_LIVE_SYNC_PERIOD_SECONDS
+  let lastSkipped: SyncSkipReason | null = null
+
+  try {
+    while (Date.now() < deadlineMs) {
+      const result = await syncLiveFixtures(apiKey, new Date())
+      attempts += 1
+      updated += result.updated
+      apiRequestsUsed += result.apiRequestsUsed
+      commits += result.commits ?? 0
+      syncPeriodSeconds = result.syncPeriodSeconds ?? syncPeriodSeconds
+      lastSkipped = result.skipped ?? null
+
+      if (result.skipped && result.skipped !== 'throttled') break
+
+      const sleepSeconds = result.skipped === 'throttled'
+        ? result.throttleSecondsRemaining ?? syncPeriodSeconds
+        : syncPeriodSeconds
+      const sleepMs = Math.max(1000, sleepSeconds * 1000)
+      const remainingMs = deadlineMs - Date.now()
+      if (remainingMs <= sleepMs) break
+
+      await sleep(sleepMs)
+    }
+
+    if (apiRequestsUsed > 0 || lastSkipped === 'throttled') {
+      await db.doc('config/app').set({
+        lastLiveSyncLoopAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastLiveSyncLoopAttempts: attempts,
+        lastLiveSyncLoopApiRequestsUsed: apiRequestsUsed,
+        lastLiveSyncLoopUpdated: updated,
+        lastLiveSyncLoopSkipped: lastSkipped,
+        lastLiveSyncLoopPeriodSeconds: syncPeriodSeconds,
+      }, { merge: true })
+    }
+
+    return {
+      updated,
+      apiRequestsUsed,
+      commits,
+      attempts,
+      syncPeriodSeconds,
+      syncPeriodMinutes: syncPeriodSeconds / 60,
+      ...(lastSkipped ? { skipped: lastSkipped } : {}),
+    }
+  } finally {
+    await releaseLiveSyncLease(db, ownerId)
   }
 }

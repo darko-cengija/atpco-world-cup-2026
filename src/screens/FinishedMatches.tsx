@@ -115,6 +115,7 @@ export default function FinishedMatches() {
             stage: (data.stage ?? 'Group Stage') as string,
             qualifier: (data.qualifier ?? null) as 'home' | 'away' | null,
             minute: null,
+            stoppageTime: null,
             statusShort: null,
           }
         })
@@ -136,6 +137,7 @@ export default function FinishedMatches() {
             awayScore,
             qualifier,
             minute: null,
+            stoppageTime: null,
             statusShort: null,
           }
           return {

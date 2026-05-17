@@ -33,9 +33,11 @@ const CONFIG_FIELDS_TO_RESET = {
 const CONFIG_FIELDS_TO_DELETE = [
   'activeLeagueId',
   'activeLeagueIds',
+  'syncPeriodSeconds',
   'syncPeriodMinutes',
   'syncPeriodUpdatedAt',
   'lastLiveSyncAt',
+  'lastLiveSyncLoopAt',
 ]
 
 function usageAndExit() {

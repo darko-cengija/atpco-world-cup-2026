@@ -7,9 +7,22 @@ export const countryNames: Record<string, string> = {
   Türkiye: 'Turkey',
 }
 
+const teamNameSoftBreaks: Record<string, string> = {
+  Bournemouth: 'Bourne\u00ADmouth',
+  Brighton: 'Bright\u00ADon',
+  Newcastle: 'New\u00ADcastle',
+  Sunderland: 'Sunder\u00ADland',
+  Wolverhampton: 'Wolver\u00ADhampton',
+}
+
 /** Returns the display name for a country, falling back to the stored name. */
 export function getCountryName(englishName: string): string {
   return countryNames[englishName] ?? englishName
+}
+
+/** Adds manual soft-break points for proper names that browsers hyphenate poorly. */
+export function getTeamNameWithSoftBreaks(displayName: string): string {
+  return teamNameSoftBreaks[displayName] ?? displayName
 }
 
 export const stageNames: Record<string, string> = {

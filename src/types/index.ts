@@ -102,6 +102,7 @@ export interface Match {
   awayScore: number | null
   qualifier: 'home' | 'away' | null
   minute: number | null
+  stoppageTime: number | null
   statusShort: string | null
 }
 

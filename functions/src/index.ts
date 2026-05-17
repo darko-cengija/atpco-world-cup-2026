@@ -1,3 +1,4 @@
+import { createHash } from 'crypto'
 import * as admin from 'firebase-admin'
 import { onSchedule } from 'firebase-functions/v2/scheduler'
 import { onCall, HttpsError } from 'firebase-functions/v2/https'
@@ -5,7 +6,7 @@ import { onDocumentCreated } from 'firebase-functions/v2/firestore'
 import { defineSecret, defineString } from 'firebase-functions/params'
 import { Resend } from 'resend'
 import { fifaMemberAssociations } from './fifaMemberAssociations'
-import { calculateSyncPeriod, syncLiveFixtures, syncMlsFixtureCatalog } from './sync'
+import { calculateSyncPeriod, syncLiveFixtures, syncLiveFixturesLoop, syncMlsFixtureCatalog } from './sync'
 import { refreshWinningChances } from './winningChances'
 
 admin.initializeApp()
@@ -27,6 +28,7 @@ const MAX_EMAIL_LENGTH = 254
 const MAX_AVATAR_URL_LENGTH = 2000
 const MAX_ALIAS_LENGTH = 80
 const MAX_FLAG_LENGTH = 16
+const MAX_PUSH_TOKEN_LENGTH = 4096
 
 interface TeamRow {
   id: string
@@ -68,6 +70,12 @@ interface DrawState {
   assignments: DrawAssignment[]
 }
 
+interface PushTokenEntry {
+  token: string
+  hash?: string
+  legacyKey?: string
+}
+
 async function requireAdmin(uid: string | undefined): Promise<void> {
   if (!uid) throw new HttpsError('unauthenticated', 'Sign in is required.')
 
@@ -94,6 +102,95 @@ function cleanString(value: unknown, maxLength: number): string | null {
 function cleanAvatarUrl(value: unknown): string | null {
   if (value === null || value === undefined) return null
   return cleanString(value, MAX_AVATAR_URL_LENGTH)
+}
+
+function cleanPushToken(value: unknown): string {
+  if (typeof value !== 'string') {
+    throw new HttpsError('invalid-argument', 'A push token is required.')
+  }
+
+  const token = value.trim()
+  if (token.length < 20 || token.length > MAX_PUSH_TOKEN_LENGTH) {
+    throw new HttpsError('invalid-argument', 'The push token is not valid.')
+  }
+
+  return token
+}
+
+function pushTokenHash(token: string): string {
+  return createHash('sha256').update(token).digest('hex')
+}
+
+function pushTokenPreview(token: string): string {
+  return `${token.slice(0, 8)}…${token.slice(-6)}`
+}
+
+function pushTokenEntriesFromData(data: admin.firestore.DocumentData | undefined): PushTokenEntry[] {
+  if (!data) return []
+
+  const entries: PushTokenEntry[] = []
+  const seen = new Set<string>()
+
+  function add(entry: PushTokenEntry) {
+    if (seen.has(entry.token)) return
+    seen.add(entry.token)
+    entries.push(entry)
+  }
+
+  const nestedTokens = data.tokens
+  if (nestedTokens && typeof nestedTokens === 'object' && !Array.isArray(nestedTokens)) {
+    for (const [hash, token] of Object.entries(nestedTokens)) {
+      if (typeof token === 'string' && token.length >= 20) add({ token, hash })
+    }
+  }
+
+  // Legacy shape: pushTokens/{uid} had each FCM token as a top-level field.
+  for (const key of Object.keys(data)) {
+    if (key === 'updatedAt' || key === 'tokens') continue
+    if (key.length >= 20) add({ token: key, legacyKey: key })
+  }
+
+  return entries
+}
+
+async function removeStalePushTokens(
+  db: admin.firestore.Firestore,
+  userId: string,
+  entries: PushTokenEntry[],
+  result: admin.messaging.BatchResponse,
+) {
+  const updateArgs: unknown[] = []
+  let staleTokenCount = 0
+
+  result.responses.forEach((response, index) => {
+    if (response.success) return
+
+    const entry = entries[index]
+    if (!entry) return
+
+    staleTokenCount += 1
+
+    if (entry.hash) {
+      updateArgs.push(
+        new admin.firestore.FieldPath('tokens', entry.hash),
+        admin.firestore.FieldValue.delete(),
+      )
+    }
+
+    if (entry.legacyKey) {
+      updateArgs.push(
+        new admin.firestore.FieldPath(entry.legacyKey),
+        admin.firestore.FieldValue.delete(),
+      )
+    }
+  })
+
+  if (updateArgs.length === 0) return 0
+
+  updateArgs.push('updatedAt', admin.firestore.FieldValue.serverTimestamp())
+
+  await (db.doc(`pushTokens/${userId}`).update as (...args: unknown[]) => Promise<unknown>)(...updateArgs)
+  return staleTokenCount
 }
 
 function escapeHtml(value: string): string {
@@ -311,6 +408,66 @@ export const updateCurrentUserProfile = onCall({ region: FUNCTIONS_REGION }, asy
   })
 
   return user
+})
+
+export const registerPushToken = onCall({ region: FUNCTIONS_REGION }, async (request) => {
+  const { uid } = await requireInvitedAuth(request)
+  const data = request.data as { token?: unknown } | undefined
+  const token = cleanPushToken(data?.token)
+  const hash = pushTokenHash(token)
+  const db = admin.firestore()
+  const tokenRef = db.doc(`pushTokens/${uid}`)
+
+  await tokenRef.set({
+    tokens: {
+      [hash]: token,
+    },
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true })
+
+  const tokenSnap = await tokenRef.get()
+  const tokenCount = pushTokenEntriesFromData(tokenSnap.data()).length
+
+  return {
+    success: true,
+    tokenCount,
+    tokenPreview: pushTokenPreview(token),
+  }
+})
+
+export const sendTestPushToCurrentUser = onCall({ region: FUNCTIONS_REGION }, async (request) => {
+  const { uid } = await requireInvitedAuth(request)
+  await requireAdmin(uid)
+
+  const db = admin.firestore()
+  const tokenSnap = await db.doc(`pushTokens/${uid}`).get()
+  const entries = pushTokenEntriesFromData(tokenSnap.data())
+
+  if (entries.length === 0) {
+    throw new HttpsError('failed-precondition', 'No push tokens are registered for this user.')
+  }
+
+  const result = await admin.messaging().sendEachForMulticast({
+    tokens: entries.map((entry) => entry.token),
+    data: {
+      type: 'test',
+      title: 'Push test',
+      body: 'World Cup 26 notifications are registered on this device.',
+      url: '/chat',
+    },
+    webpush: { headers: { Urgency: 'high' } },
+  })
+
+  const staleTokenCount = await removeStalePushTokens(db, uid, entries, result)
+  const activeTokenCount = Math.max(0, entries.length - staleTokenCount)
+
+  return {
+    tokenCount: entries.length,
+    activeTokenCount,
+    staleTokenCount,
+    successCount: result.successCount,
+    failureCount: result.failureCount,
+  }
 })
 
 async function touchMatchesForTeam(teamId: string): Promise<number> {
@@ -1071,20 +1228,21 @@ export const onNewChatMessage = onDocumentCreated(
   const messaging = admin.messaging()
   const truncated = text.length > 80 ? text.slice(0, 80) + '…' : text
 
-  const userSends: Array<{ userId: string; tokens: string[] }> = []
+  const userSends: Array<{ userId: string; entries: PushTokenEntry[] }> = []
   for (const tokenDoc of tokensSnap.docs) {
     const userId = tokenDoc.id
     if (userId === authorId) continue
-    const tokens = Object.keys(tokenDoc.data()).filter((k) => k !== 'updatedAt')
-    if (tokens.length > 0) userSends.push({ userId, tokens })
+    const entries = pushTokenEntriesFromData(tokenDoc.data())
+    if (entries.length > 0) userSends.push({ userId, entries })
   }
 
   if (userSends.length === 0) return
 
   await Promise.all(
-    userSends.map(async ({ userId, tokens }) => {
+    userSends.map(async ({ userId, entries }) => {
       const isMentioned = (mentions as string[]).includes(userId)
       const unreadCount = unreadCountFor(userId)
+      const tokens = entries.map((entry) => entry.token)
       const result = await messaging.sendEachForMulticast({
         tokens,
         data: {
@@ -1097,15 +1255,7 @@ export const onNewChatMessage = onDocumentCreated(
         webpush: { headers: { Urgency: 'high' } },
       })
 
-      // Remove stale tokens
-      const stale = result.responses
-        .map((r, i) => (!r.success ? tokens[i] : null))
-        .filter((t): t is string => t !== null)
-      if (stale.length > 0) {
-        const updates: Record<string, admin.firestore.FieldValue> = {}
-        stale.forEach((t) => (updates[t] = admin.firestore.FieldValue.delete()))
-        await db.doc(`pushTokens/${userId}`).update(updates)
-      }
+      await removeStalePushTokens(db, userId, entries, result)
     }),
   )
   },
@@ -1155,11 +1305,11 @@ export const sendMatchReminders = onSchedule(
         const userId = tokenDoc.id
         if (predictedUserIds.has(userId)) continue
 
-        const tokens = Object.keys(tokenDoc.data()).filter((k) => k !== 'updatedAt')
-        if (tokens.length === 0) continue
+        const entries = pushTokenEntriesFromData(tokenDoc.data())
+        if (entries.length === 0) continue
 
-        await messaging.sendEachForMulticast({
-          tokens,
+        const result = await messaging.sendEachForMulticast({
+          tokens: entries.map((entry) => entry.token),
           data: {
             type: 'reminder',
             title: '⏰ Prediction reminder',
@@ -1169,6 +1319,7 @@ export const sendMatchReminders = onSchedule(
           },
           webpush: { headers: { Urgency: 'high' } },
         })
+        await removeStalePushTokens(db, userId, entries, result)
       }
     }
   },
@@ -1243,7 +1394,7 @@ export const syncLiveMatches = onSchedule(
     secrets: [apiFootballKey],
   },
   async () => {
-    await syncLiveFixtures(apiFootballKey.value() || null)
+    await syncLiveFixturesLoop(apiFootballKey.value() || null)
   },
 )
 

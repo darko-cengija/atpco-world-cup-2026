@@ -18,9 +18,11 @@ const EMPTY_COLLECTIONS = ['teams', 'matches', 'predictions', 'playerTeams', 'me
 const REMOVED_CONFIG_FIELDS = [
   'activeLeagueId',
   'activeLeagueIds',
+  'syncPeriodSeconds',
   'syncPeriodMinutes',
   'syncPeriodUpdatedAt',
   'lastLiveSyncAt',
+  'lastLiveSyncLoopAt',
 ]
 
 function getStoredRefreshToken() {

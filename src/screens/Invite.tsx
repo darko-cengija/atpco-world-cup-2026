@@ -192,19 +192,19 @@ export default function Invite() {
             placeholder="App name (e.g. Che)"
             className="w-full bg-brand-card border border-brand-border rounded px-4 py-3 text-brand-ink placeholder-brand-faint focus:outline-none focus:border-brand-ink transition-colors text-sm"
           />
-          <div className="flex gap-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
             <input
               type="email"
               value={emailInput}
               onChange={(e) => { setEmailInput(e.target.value); setError(null) }}
               onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
               placeholder="ime@gmail.com"
-              className="flex-1 bg-brand-card border border-brand-border rounded px-4 py-3 text-brand-ink placeholder-brand-faint focus:outline-none focus:border-brand-ink transition-colors text-sm"
+              className="min-w-0 bg-brand-card border border-brand-border rounded px-4 py-3 text-brand-ink placeholder-brand-faint focus:outline-none focus:border-brand-ink transition-colors text-sm"
             />
             <button
               onClick={handleAdd}
               disabled={adding || !emailInput.trim()}
-              className="ticket-button flex items-center gap-2 px-4 py-3 bg-brand-accent text-brand-bg rounded hover:bg-brand-accent-hover transition-colors disabled:opacity-50 whitespace-nowrap"
+              className="ticket-button flex shrink-0 items-center gap-2 px-4 py-3 bg-brand-accent text-brand-bg rounded hover:bg-brand-accent-hover transition-colors disabled:opacity-50 whitespace-nowrap"
             >
               <UserPlus size={16} />
               Invite

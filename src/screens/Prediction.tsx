@@ -14,6 +14,7 @@ import {
   onSnapshot,
   setDoc,
   serverTimestamp,
+  type DocumentData,
 } from 'firebase/firestore'
 import { db } from '@/firebase'
 import { useAuth } from '@/contexts/AuthContext'
@@ -49,11 +50,7 @@ async function findNextUnpredictedMatch(currentMatchId: string, userId: string):
   return null
 }
 
-async function fetchMatch(matchId: string): Promise<Match | null> {
-  const snap = await getDoc(doc(db, 'matches', matchId))
-  if (!snap.exists()) return null
-  const data = snap.data()
-
+async function buildMatchFromData(matchId: string, data: DocumentData): Promise<Match | null> {
   const [homeSnap, awaySnap] = await Promise.all([
     getDoc(doc(db, 'teams', data.homeTeamId)),
     getDoc(doc(db, 'teams', data.awayTeamId)),
@@ -62,7 +59,7 @@ async function fetchMatch(matchId: string): Promise<Match | null> {
   if (!homeSnap.exists() || !awaySnap.exists()) return null
 
   return {
-    id: snap.id,
+    id: matchId,
     homeTeamId: data.homeTeamId,
     awayTeamId: data.awayTeamId,
     homeTeam: { id: homeSnap.id, ...homeSnap.data() } as Match['homeTeam'],
@@ -75,6 +72,7 @@ async function fetchMatch(matchId: string): Promise<Match | null> {
     awayScore: data.awayScore ?? null,
     qualifier: data.qualifier ?? null,
     minute: data.minute ?? null,
+    stoppageTime: data.stoppageTime ?? null,
     statusShort: data.statusShort ?? null,
   }
 }
@@ -124,10 +122,35 @@ export default function Prediction() {
 
   useEffect(() => {
     if (!matchId) return
-    fetchMatch(matchId).then((m) => {
-      setMatch(m)
-      setLoading(false)
-    })
+
+    let snapshotVersion = 0
+    setLoading(true)
+
+    const unsubscribe = onSnapshot(
+      doc(db, 'matches', matchId),
+      async (snap) => {
+        const currentVersion = ++snapshotVersion
+        if (!snap.exists()) {
+          setMatch(null)
+          setLoading(false)
+          return
+        }
+
+        const nextMatch = await buildMatchFromData(snap.id, snap.data())
+        if (currentVersion !== snapshotVersion) return
+        setMatch(nextMatch)
+        setLoading(false)
+      },
+      () => {
+        setMatch(null)
+        setLoading(false)
+      },
+    )
+
+    return () => {
+      snapshotVersion += 1
+      unsubscribe()
+    }
   }, [matchId])
 
   // Load all predictions for this match
@@ -240,21 +263,21 @@ export default function Prediction() {
             </p>
           </div>
 
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 py-5">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3 px-4 py-5">
             <div className="flex-1 flex flex-col items-center gap-1">
               <span className="grid h-12 min-w-16 place-items-center rounded border border-brand-border bg-brand-card px-2 text-5xl shadow-sm">{match.homeTeam.flag}</span>
               <span className="ticket-meta mt-2">{match.homeTeamId.slice(0, 3)}</span>
               <span className="font-display text-lg leading-tight text-brand-ink text-center">{getCountryName(match.homeTeam.name)}</span>
             </div>
             {isLocked && match.homeScore !== null && match.awayScore !== null ? (
-              <div className="flex flex-col items-center px-3">
+              <div className="flex flex-col items-center self-center px-3">
                 {match.status === 'live' && (
                   <span className="ticket-pill ticket-pill-stamp mb-1">Live</span>
                 )}
                 <span className="font-display text-4xl leading-none text-brand-ink tabular-nums">{match.homeScore}:{match.awayScore}</span>
               </div>
             ) : (
-              <span className="grid h-11 w-11 place-items-center rounded-full border-2 border-brand-ink bg-brand-card font-display text-base text-brand-ink">vs</span>
+              <span className="grid h-11 w-11 place-items-center self-center rounded-full border-2 border-brand-ink bg-brand-card font-display text-base text-brand-ink">vs</span>
             )}
             <div className="flex-1 flex flex-col items-center gap-1">
               <span className="grid h-12 min-w-16 place-items-center rounded border border-brand-border bg-brand-card px-2 text-5xl shadow-sm">{match.awayTeam.flag}</span>

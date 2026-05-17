@@ -193,12 +193,12 @@ function ReactionRail({
   const slots = isMe ? [currentSlot, ...otherSlots] : [...otherSlots, currentSlot]
 
   return (
-    <div className="relative flex shrink-0 items-center self-center">
+    <div className="flex shrink-0 flex-col items-center self-center">
       <div className="flex items-center rounded-full border border-brand-border bg-brand-card p-0.5 shadow-lg shadow-black/10">
         {slots}
       </div>
       {totalReactions > 1 && (
-        <span className="absolute left-1/2 top-full mt-0.5 -translate-x-1/2 font-mono text-sm font-medium leading-none text-brand-stamp">
+        <span className="mt-0.5 font-mono text-sm font-medium leading-none text-brand-stamp">
           {totalReactions}
         </span>
       )}

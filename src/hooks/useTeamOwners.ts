@@ -1,42 +1,102 @@
-import { useEffect, useState } from 'react'
-import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore'
+import { useEffect, useMemo, useState } from 'react'
+import { collection, documentId, query, where, getDocs } from 'firebase/firestore'
 import { db } from '@/firebase'
+
+const FIRESTORE_IN_QUERY_LIMIT = 30
 
 // Returns a map of teamId → array of player display names
 export function useTeamOwners(teamIds: string[]) {
   const [owners, setOwners] = useState<Record<string, string[]>>({})
   const [loading, setLoading] = useState(true)
+  const teamIdKey = useMemo(
+    () => [...new Set(teamIds)].sort().join(','),
+    [teamIds],
+  )
 
   useEffect(() => {
-    if (teamIds.length === 0) {
+    const uniqueTeamIds = teamIdKey.length > 0 ? teamIdKey.split(',') : []
+
+    if (uniqueTeamIds.length === 0) {
+      setOwners({})
       setLoading(false)
       return
     }
 
+    let disposed = false
+    setLoading(true)
+    setOwners(Object.fromEntries(uniqueTeamIds.map((teamId) => [teamId, []])))
+
     async function load() {
-      const result: Record<string, string[]> = {}
+      try {
+        const ownerIdsByTeamId: Record<string, string[]> = Object.fromEntries(
+          uniqueTeamIds.map((teamId) => [teamId, []]),
+        )
+        const ownerIds = new Set<string>()
 
-      for (const teamId of teamIds) {
-        const q = query(collection(db, 'playerTeams'), where('teamId', '==', teamId))
-        const snap = await getDocs(q)
+        await Promise.all(
+          chunk(uniqueTeamIds, FIRESTORE_IN_QUERY_LIMIT).map(async (ids) => {
+            const snap = await getDocs(query(
+              collection(db, 'playerTeams'),
+              where('teamId', 'in', ids),
+            ))
 
-        const names: string[] = []
-        for (const docSnap of snap.docs) {
-          const { userId } = docSnap.data()
-          const userSnap = await getDoc(doc(db, 'users', userId))
-          if (userSnap.exists()) {
-            names.push(userSnap.data().displayName ?? 'Unknown')
-          }
+            for (const assignmentDoc of snap.docs) {
+              const { teamId, userId } = assignmentDoc.data() as { teamId?: string; userId?: string }
+              if (!teamId || !userId || !ownerIdsByTeamId[teamId]) continue
+
+              ownerIdsByTeamId[teamId].push(userId)
+              ownerIds.add(userId)
+            }
+          }),
+        )
+
+        const ownerNamesById: Record<string, string> = {}
+
+        await Promise.all(
+          chunk([...ownerIds], FIRESTORE_IN_QUERY_LIMIT).map(async (ids) => {
+            const snap = await getDocs(query(
+              collection(db, 'users'),
+              where(documentId(), 'in', ids),
+            ))
+
+            for (const userDoc of snap.docs) {
+              ownerNamesById[userDoc.id] = userDoc.data().displayName ?? 'Unknown'
+            }
+          }),
+        )
+
+        const result: Record<string, string[]> = {}
+        for (const teamId of uniqueTeamIds) {
+          result[teamId] = ownerIdsByTeamId[teamId].map((ownerId) => ownerNamesById[ownerId] ?? 'Unknown')
         }
-        result[teamId] = names
-      }
 
-      setOwners(result)
-      setLoading(false)
+        if (!disposed) {
+          setOwners(result)
+          setLoading(false)
+        }
+      } catch (err) {
+        console.error('Failed to load team owners.', err)
+        if (!disposed) {
+          setLoading(false)
+          setOwners((current) => current)
+        }
+      }
     }
 
-    load()
-  }, [teamIds.join(',')])
+    void load()
+
+    return () => {
+      disposed = true
+    }
+  }, [teamIdKey])
 
   return { owners, loading }
+}
+
+function chunk<T>(items: T[], size: number) {
+  const chunks: T[][] = []
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size))
+  }
+  return chunks
 }
