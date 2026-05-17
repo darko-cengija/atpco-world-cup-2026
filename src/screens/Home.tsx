@@ -10,6 +10,7 @@ import { useUserPredictions } from '@/hooks/useUserPredictions'
 import { getCountryName } from '@/lib/translations'
 import { useDrawConfig } from '@/hooks/useDrawConfig'
 import { TicketSpinner } from '@/components/TicketMark'
+import type { Match } from '@/types'
 
 function formatMatchDate(date: Date) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
@@ -17,6 +18,19 @@ function formatMatchDate(date: Date) {
 
 function formatMatchTime(date: Date) {
   return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+}
+
+function formatLiveClock(match: Match) {
+  if (match.statusShort === 'HT') return 'Halftime'
+  if (match.statusShort === 'BT') return 'Awaiting extra time'
+  if (match.statusShort === 'P') return 'Awaiting penalties'
+  if (match.minute === null) return 'Live'
+
+  const stoppageTime = match.stoppageTime !== null && match.stoppageTime > 0
+    ? `+${match.stoppageTime}`
+    : ''
+
+  return `${match.minute}${stoppageTime}'`
 }
 
 export default function Home() {
@@ -88,17 +102,9 @@ export default function Home() {
                   </div>
                   <div className="text-right">
                     {match.status === 'live' ? (
-                      <span className="ticket-pill ticket-pill-stamp">
+                      <span className="ticket-pill ticket-pill-stamp shrink-0 whitespace-nowrap">
                         <span className="h-1.5 w-1.5 animate-[tkPulse_1.4s_ease-in-out_infinite] rounded-full bg-brand-stamp" />
-                        {match.statusShort === 'HT'
-                          ? 'Halftime'
-                          : match.statusShort === 'BT'
-                            ? 'Awaiting extra time'
-                            : match.statusShort === 'P'
-                              ? 'Awaiting penalties'
-                              : match.minute !== null
-                                ? `${match.minute}'`
-                                : 'Live'}
+                        {formatLiveClock(match)}
                       </span>
                     ) : (
                       <p className="ticket-meta">Venue</p>
@@ -110,31 +116,18 @@ export default function Home() {
                 <div className="ticket-tear"><div className="ticket-tear-line" /></div>
 
                 {/* Teams */}
-                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-5">
+                <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-2 px-4 py-5">
                   <TeamCol
                     flag={match.homeTeam.flag}
                     name={getCountryName(match.homeTeam.name)}
                     owners={homeOwners}
                   />
                   {isLocked && match.homeScore !== null && match.awayScore !== null ? (
-                    <div className="flex flex-col items-center px-3">
-                      {match.status === 'live' && (
-                        <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-0.5">
-                          {match.statusShort === 'HT'
-                            ? 'Halftime'
-                            : match.statusShort === 'BT'
-                              ? 'Awaiting extra time'
-                              : match.statusShort === 'P'
-                                ? 'Awaiting penalties'
-                                : match.minute !== null
-                                  ? `${match.minute}'`
-                                  : 'Live'}
-                        </span>
-                      )}
+                    <div className="flex flex-col items-center self-center px-3">
                       <span className="font-display text-3xl leading-none text-brand-ink tabular-nums">{match.homeScore}:{match.awayScore}</span>
                     </div>
                   ) : (
-                    <span className="grid h-10 w-10 place-items-center rounded-full border-2 border-brand-ink bg-brand-card font-display text-sm text-brand-ink">vs</span>
+                    <span className="grid h-10 w-10 place-items-center self-center rounded-full border-2 border-brand-ink bg-brand-card font-display text-sm text-brand-ink">vs</span>
                   )}
                   <TeamCol
                     flag={match.awayTeam.flag}
@@ -220,21 +213,13 @@ function TeamCol({
   const textAlign = align === 'right' ? 'text-right' : 'text-left'
 
   return (
-    <div className={`flex-1 flex flex-col ${align === 'right' ? 'items-end' : 'items-start'}`}>
+    <div className={`min-w-0 flex-1 flex flex-col ${align === 'right' ? 'items-end' : 'items-start'}`}>
       <span className="mb-2 grid h-9 min-w-12 place-items-center rounded border border-brand-border bg-brand-card px-2 text-3xl shadow-sm">{flag}</span>
-      {owners.length > 0 ? (
-        <>
-          <span className={`ticket-meta max-w-full ${textAlign}`}>{align === 'right' ? 'Away' : 'Home'}</span>
-          <span className={`max-w-full font-display text-xl leading-tight text-brand-ink ${textAlign}`}>{name}</span>
-          <span className={`max-w-full text-xs font-semibold text-brand-muted ${textAlign}`}>
-            {owners.join(', ')}
-          </span>
-        </>
-      ) : (
-        <>
-          <span className={`ticket-meta max-w-full ${textAlign}`}>{align === 'right' ? 'Away' : 'Home'}</span>
-          <span className={`max-w-full font-display text-xl leading-tight text-brand-ink ${textAlign}`}>{name}</span>
-        </>
+      <span className={`max-w-full break-words font-display text-xl leading-tight text-brand-ink ${textAlign}`}>{name}</span>
+      {owners.length > 0 && (
+        <span className={`mt-1 max-w-full break-words text-sm font-bold leading-tight text-brand-stamp ${textAlign}`}>
+          {owners.join(', ')}
+        </span>
       )}
     </div>
   )
