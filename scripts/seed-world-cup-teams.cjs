@@ -17,6 +17,8 @@ const FIREBASE_CLIENT_ID = '563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.g
 const FIREBASE_CLIENT_SECRET = 'j9iVZfS8kkCEFUPaAeJV0sAi'
 const RANKING_SNAPSHOT = 'FIFA/Coca-Cola Men’s World Ranking, 1 April 2026'
 const RANKING_SNAPSHOT_DATE = '2026-04-01'
+const WORLD_CUP_LEAGUE_ID = 1
+const WORLD_CUP_SEASON = 2026
 
 function usageAndExit() {
   console.error('Usage: node scripts/seed-world-cup-teams.cjs --dry-run | --confirm | --verify')
@@ -240,6 +242,8 @@ async function verifySeed(token) {
     failures.push('config/app is missing')
   } else {
     if (config.drawStatus !== 'list_building') failures.push(`config.drawStatus: ${config.drawStatus}`)
+    if (config.competitionMode !== 'world_cup_2026') failures.push(`config.competitionMode: ${config.competitionMode}`)
+    if (config.competitionName !== 'Argy Bargy') failures.push(`config.competitionName: ${config.competitionName}`)
     if (config.drawRankingSnapshot !== RANKING_SNAPSHOT) failures.push(`config.drawRankingSnapshot: ${config.drawRankingSnapshot}`)
     if (config.drawTeamCount !== 48) failures.push(`config.drawTeamCount: ${config.drawTeamCount}`)
     if (config.teamsPerPlayer !== 48) failures.push(`config.teamsPerPlayer: ${config.teamsPerPlayer}`)
@@ -302,11 +306,22 @@ async function main() {
   }
 
   await patchDocument('config/app', {
+    competitionMode: 'world_cup_2026',
+    competitionName: 'Argy Bargy',
     drawStatus: 'list_building',
     drawRankingSnapshot: RANKING_SNAPSHOT,
     drawRankingSnapshotDate: RANKING_SNAPSHOT_DATE,
     drawTeamCount: 48,
     teamsPerPlayer: 48,
+    activeLeagueId: WORLD_CUP_LEAGUE_ID,
+    activeLeagueIds: [WORLD_CUP_LEAGUE_ID],
+    activeLeagueSeason: WORLD_CUP_SEASON,
+    activeLeagueSeasons: { [String(WORLD_CUP_LEAGUE_ID)]: WORLD_CUP_SEASON },
+    activeLeagues: [{
+      id: WORLD_CUP_LEAGUE_ID,
+      season: WORLD_CUP_SEASON,
+      name: 'FIFA World Cup',
+    }],
     teamsSeededAt: new Date(),
   }, token)
 

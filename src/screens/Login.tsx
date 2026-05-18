@@ -80,7 +80,7 @@ export default function Login() {
           <TicketMark className="h-24 w-24" />
         </div>
         <p className="ticket-meta mb-2 text-brand-stamp">Pool · admit one</p>
-        <h1 className="font-display text-4xl leading-none text-brand-ink">World Cup 26</h1>
+        <h1 className="font-display text-4xl leading-none text-brand-ink">Argy Bargy</h1>
         <p className="text-brand-muted mt-2 text-sm">Invite-only. Sign in with your Google account.</p>
       </motion.div>
 

@@ -818,6 +818,8 @@ function calculateWinningChances(
   teams: TeamRow[],
   probabilitiesByMatchNumber: Map<number, MatchProbability>,
 ) {
+  if (players.length === 0) return []
+
   const teamById = new Map(teams.map((team) => [team.id, team]))
   const fixedByMatchNumber = new Map(
     matches

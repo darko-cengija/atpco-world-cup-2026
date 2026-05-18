@@ -8,7 +8,7 @@ function requiredEnv(name: string): string {
   return value
 }
 
-export const APP_NAME = import.meta.env.VITE_APP_NAME || 'World Cup 26'
+export const APP_NAME = import.meta.env.VITE_APP_NAME || 'Argy Bargy'
 export const FIREBASE_FUNCTIONS_REGION =
   import.meta.env.VITE_FIREBASE_FUNCTIONS_REGION || 'us-central1'
 

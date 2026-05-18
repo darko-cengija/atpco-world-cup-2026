@@ -40,7 +40,7 @@ export default function Layout() {
           <TicketMark className="h-10 w-10" />
           <div>
             <p className="ticket-meta">Pool · admit one</p>
-            <p className="font-display text-base leading-none text-brand-ink">World Cup 26</p>
+            <p className="font-display text-base leading-none text-brand-ink">Argy Bargy</p>
           </div>
         </div>
         <NavLink

@@ -1,6 +1,6 @@
 
     <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024"
-      viewBox="0 0 512 512" role="img" aria-label="World Cup 26 Admit One Stub icon">
+      viewBox="0 0 512 512" role="img" aria-label="Argy Bargy Admit One Stub icon">
       <defs>
     <pattern id="grain-a" width="3" height="3" patternUnits="userSpaceOnUse">
       <circle cx="1" cy="1" r="0.55" fill="#000" opacity="0.045"/>
@@ -38,7 +38,7 @@
             stroke="#0f3a35" stroke-opacity="0.4" stroke-width="2.6"/>
           <text x="97.28" y="333" text-anchor="middle"
             font-family='"JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace' font-size="20.5"
-            font-weight="800" letter-spacing="2" fill="#a8392b">WC26</text>
+            font-weight="800" letter-spacing="2" fill="#a8392b">AB</text>
 
           <text x="353.28" y="68" text-anchor="middle"
             font-family='"JetBrains Mono", "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace' font-size="16.5"

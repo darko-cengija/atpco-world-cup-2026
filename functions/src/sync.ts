@@ -1,10 +1,8 @@
 import * as admin from 'firebase-admin'
 
 const API_BASE = 'https://v3.football.api-sports.io'
-const MLS_LEAGUE_ID = 253
-const MLS_SEASON = 2026
-const EPL_LEAGUE_ID = 39
-const EPL_SEASON = 2025
+const WORLD_CUP_LEAGUE_ID = 1
+const WORLD_CUP_SEASON = 2026
 const API_REQUEST_BUDGET = 3500
 const MIN_LIVE_SYNC_PERIOD_SECONDS = 10
 const DEFAULT_LIVE_SYNC_PERIOD_SECONDS = 60
@@ -67,9 +65,43 @@ interface LeagueConfig {
 type SyncSkipReason = 'missing_api_key' | 'inactive_competition' | 'no_candidates' | 'throttled' | 'lease_held'
 
 const LEAGUE_DEFAULTS = new Map<number, LeagueConfig>([
-  [MLS_LEAGUE_ID, { id: MLS_LEAGUE_ID, season: MLS_SEASON, name: 'MLS' }],
-  [EPL_LEAGUE_ID, { id: EPL_LEAGUE_ID, season: EPL_SEASON, name: 'EPL' }],
+  [WORLD_CUP_LEAGUE_ID, { id: WORLD_CUP_LEAGUE_ID, season: WORLD_CUP_SEASON, name: 'FIFA World Cup' }],
 ])
+
+const API_NAME_ALIASES: Record<string, string> = {
+  'bosnia herzegovina': 'bosnia-and-herzegovina',
+  'bosnia and herzegovina': 'bosnia-and-herzegovina',
+  'cabo verde': 'cabo-verde',
+  'cape verde': 'cabo-verde',
+  'congo dr': 'congo-dr',
+  'dr congo': 'congo-dr',
+  'democratic republic of congo': 'congo-dr',
+  'cote divoire': 'cote-divoire',
+  'ivory coast': 'cote-divoire',
+  'curacao': 'curacao',
+  'czech republic': 'czechia',
+  'czechia': 'czechia',
+  'korea republic': 'korea-republic',
+  'south korea': 'korea-republic',
+  'republic of korea': 'korea-republic',
+  'turkey': 'turkiye',
+  'turkiye': 'turkiye',
+  'united states': 'usa',
+  'usa': 'usa',
+}
+
+interface LocalTeamRow {
+  id: string
+  name?: string
+  apiFootballAliases?: string[]
+}
+
+interface LocalMatchRow {
+  id: string
+  ref: admin.firestore.DocumentReference
+  homeTeamId: string
+  awayTeamId: string
+}
 
 interface LiveSyncResult {
   skipped?: SyncSkipReason
@@ -94,6 +126,16 @@ function normalizeStage(round: string) {
   if (round.startsWith('League Phase') || round.startsWith('League Stage')) return 'League Phase'
   if (round === '3rd Place Final') return 'Third Place Play-off'
   return round || 'Regular Season'
+}
+
+function normalizeName(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/gi, ' ')
+    .trim()
+    .toLowerCase()
 }
 
 function isKnockoutStage(stage: string) {
@@ -221,6 +263,21 @@ async function apiFootballGet<T>(apiKey: string, path: string, params: Record<st
   return await response.json() as ApiFootballResponse<T>
 }
 
+function normalizeWorldCupLeague(league: LeagueConfig): LeagueConfig | null {
+  if (league.id !== WORLD_CUP_LEAGUE_ID) return null
+  return {
+    id: WORLD_CUP_LEAGUE_ID,
+    season: Number.isInteger(league.season) ? league.season : WORLD_CUP_SEASON,
+    name: league.name || 'FIFA World Cup',
+  }
+}
+
+function onlyWorldCupLeagues(leagues: LeagueConfig[]) {
+  return leagues
+    .map(normalizeWorldCupLeague)
+    .filter((league): league is LeagueConfig => league !== null)
+}
+
 function activeLeagueIds(config: admin.firestore.DocumentData) {
   return activeLeagueConfigs(config).map((league) => league.id)
 }
@@ -228,7 +285,7 @@ function activeLeagueIds(config: admin.firestore.DocumentData) {
 function activeLeagueConfigs(config: admin.firestore.DocumentData): LeagueConfig[] {
   const leagues = config.activeLeagues
   if (Array.isArray(leagues)) {
-    return leagues
+    return onlyWorldCupLeagues(leagues
       .map((league) => {
         const id = Number(league?.id)
         const season = Number(league?.season)
@@ -241,12 +298,12 @@ function activeLeagueConfigs(config: admin.firestore.DocumentData): LeagueConfig
             : LEAGUE_DEFAULTS.get(id)?.name ?? String(id),
         }
       })
-      .filter((league): league is LeagueConfig => league !== null)
+      .filter((league): league is LeagueConfig => league !== null))
   }
 
   const ids = config.activeLeagueIds
   if (Array.isArray(ids)) {
-    return ids
+    return onlyWorldCupLeagues(ids
       .map((id) => Number(id))
       .filter((id) => Number.isInteger(id))
       .map((id) => {
@@ -257,50 +314,39 @@ function activeLeagueConfigs(config: admin.firestore.DocumentData): LeagueConfig
           season: Number.isInteger(configuredSeason) ? configuredSeason : fallback?.season ?? new Date().getUTCFullYear(),
           name: fallback?.name ?? String(id),
         }
-      })
+      }))
   }
 
   const id = Number(config.activeLeagueId)
   if (Number.isInteger(id)) {
     const configuredSeason = Number(config.activeLeagueSeason)
     const fallback = LEAGUE_DEFAULTS.get(id)
-    return [{
+    return onlyWorldCupLeagues([{
       id,
       season: Number.isInteger(configuredSeason) ? configuredSeason : fallback?.season ?? new Date().getUTCFullYear(),
       name: fallback?.name ?? String(id),
-    }]
+    }])
   }
-  if (config.competitionMode === 'mls_test') return [LEAGUE_DEFAULTS.get(MLS_LEAGUE_ID)!]
+  if (config.competitionMode === 'world_cup_2026') return [LEAGUE_DEFAULTS.get(WORLD_CUP_LEAGUE_ID)!]
   return []
-}
-
-function activeTeamIds(config: admin.firestore.DocumentData) {
-  const ids = config.liveSyncTeamIds ?? config.selectedTeamIds
-  if (!Array.isArray(ids)) return null
-  const normalized = ids
-    .map((id) => String(id))
-    .filter(Boolean)
-  return normalized.length > 0 ? new Set(normalized) : null
-}
-
-function fixtureInSelectedPool(fixture: ApiFootballFixture, selectedTeamIds: Set<string> | null) {
-  if (!selectedTeamIds) return true
-  return selectedTeamIds.has(String(fixture.teams.home.id)) || selectedTeamIds.has(String(fixture.teams.away.id))
 }
 
 function fixtureScore(fixture: ApiFootballFixture, side: 'home' | 'away') {
   return fixture.goals[side] ?? fixture.score.fulltime[side]
 }
 
-function fixtureToMatchPatch(fixture: ApiFootballFixture) {
+function fixtureToMatchPatch(
+  fixture: ApiFootballFixture,
+  localTeams?: { homeTeamId: string; awayTeamId: string },
+) {
   const status = mapStatus(fixture.fixture.status.short)
   const isExtraTimeFinal = ['AET', 'PEN'].includes(fixture.fixture.status.short)
   const fulltimeHome = fixture.score.fulltime.home
   const fulltimeAway = fixture.score.fulltime.away
 
   return {
-    homeTeamId: String(fixture.teams.home.id),
-    awayTeamId: String(fixture.teams.away.id),
+    homeTeamId: localTeams?.homeTeamId ?? String(fixture.teams.home.id),
+    awayTeamId: localTeams?.awayTeamId ?? String(fixture.teams.away.id),
     date: admin.firestore.Timestamp.fromDate(new Date(fixture.fixture.date)),
     venue: fixture.fixture.venue?.name ?? fixture.fixture.venue?.city ?? '',
     stage: normalizeStage(fixture.league.round),
@@ -322,10 +368,15 @@ function fixtureToMatchPatch(fixture: ApiFootballFixture) {
   }
 }
 
-async function writeFixturePatches(db: admin.firestore.Firestore, fixtures: ApiFootballFixture[]) {
+async function writeFixturePatches(
+  fixtures: ApiFootballFixture[],
+  matchesByFixtureId: Map<number, LocalMatchRow>,
+) {
+  const db = admin.firestore()
   let batch = db.batch()
   let count = 0
   let commits = 0
+  let updated = 0
 
   async function commitIfNeeded(force = false) {
     if (count === 0 || (!force && count < BATCH_LIMIT)) return
@@ -336,16 +387,89 @@ async function writeFixturePatches(db: admin.firestore.Firestore, fixtures: ApiF
   }
 
   for (const fixture of fixtures) {
-    batch.set(db.doc(`matches/${fixture.fixture.id}`), fixtureToMatchPatch(fixture), { merge: true })
+    const match = matchesByFixtureId.get(fixture.fixture.id)
+    if (!match) continue
+
+    batch.set(
+      match.ref,
+      fixtureToMatchPatch(fixture, {
+        homeTeamId: match.homeTeamId,
+        awayTeamId: match.awayTeamId,
+      }),
+      { merge: true },
+    )
     count++
+    updated++
     await commitIfNeeded()
   }
 
   await commitIfNeeded(true)
-  return commits
+  return { commits, updated }
 }
 
-export async function syncMlsFixtureCatalog(apiKey: string | null) {
+async function loadLocalTeams(db: admin.firestore.Firestore): Promise<LocalTeamRow[]> {
+  const snap = await db.collection('teams').get()
+  return snap.docs.map((docSnap) => {
+    const data = docSnap.data()
+    return {
+      id: docSnap.id,
+      name: typeof data.name === 'string' ? data.name : undefined,
+      apiFootballAliases: Array.isArray(data.apiFootballAliases)
+        ? data.apiFootballAliases.filter((alias): alias is string => typeof alias === 'string')
+        : [],
+    }
+  })
+}
+
+async function loadLocalMatches(db: admin.firestore.Firestore): Promise<LocalMatchRow[]> {
+  const snap = await db.collection('matches').get()
+  return snap.docs
+    .map((docSnap) => {
+      const data = docSnap.data()
+      const homeTeamId = typeof data.homeTeamId === 'string' ? data.homeTeamId : null
+      const awayTeamId = typeof data.awayTeamId === 'string' ? data.awayTeamId : null
+      if (!homeTeamId || !awayTeamId) return null
+      return {
+        id: docSnap.id,
+        ref: docSnap.ref,
+        homeTeamId,
+        awayTeamId,
+      }
+    })
+    .filter((match): match is LocalMatchRow => match !== null)
+}
+
+function buildLocalTeamNameMap(teams: LocalTeamRow[]) {
+  const map = new Map<string, string>()
+  for (const team of teams) {
+    if (team.name) map.set(normalizeName(team.name), team.id)
+    for (const alias of team.apiFootballAliases ?? []) map.set(normalizeName(alias), team.id)
+  }
+  for (const [alias, teamId] of Object.entries(API_NAME_ALIASES)) map.set(alias, teamId)
+  return map
+}
+
+function buildLocalMatchesByTeams(matches: LocalMatchRow[]) {
+  const map = new Map<string, LocalMatchRow>()
+  for (const match of matches) {
+    map.set(`${match.homeTeamId}:${match.awayTeamId}`, match)
+    map.set(`${match.awayTeamId}:${match.homeTeamId}`, match)
+  }
+  return map
+}
+
+function mapFixtureToLocalMatch(
+  fixture: ApiFootballFixture,
+  teamNameMap: Map<string, string>,
+  matchesByTeams: Map<string, LocalMatchRow>,
+) {
+  const homeTeamId = teamNameMap.get(normalizeName(fixture.teams.home.name))
+  const awayTeamId = teamNameMap.get(normalizeName(fixture.teams.away.name))
+  if (!homeTeamId || !awayTeamId) return null
+  return matchesByTeams.get(`${homeTeamId}:${awayTeamId}`) ?? null
+}
+
+export async function syncWorldCupFixtureCatalog(apiKey: string | null) {
   if (!apiKey) return { skipped: 'missing_api_key' as SyncSkipReason, fixtures: 0, apiRequestsUsed: 0 }
 
   const db = admin.firestore()
@@ -356,10 +480,17 @@ export async function syncMlsFixtureCatalog(apiKey: string | null) {
     return { skipped: 'inactive_competition' as SyncSkipReason, fixtures: 0, apiRequestsUsed: 0 }
   }
 
-  const selectedTeamIds = activeTeamIds(config)
   let fixtures = 0
   let commits = 0
   let apiRequestsUsed = 0
+  let unmappedFixtures = 0
+
+  const [localTeams, localMatches] = await Promise.all([
+    loadLocalTeams(db),
+    loadLocalMatches(db),
+  ])
+  const teamNameMap = buildLocalTeamNameMap(localTeams)
+  const matchesByTeams = buildLocalMatchesByTeams(localMatches)
 
   for (const league of leagues) {
     const body = await apiFootballGet<ApiFootballFixture>(apiKey, '/fixtures', {
@@ -368,22 +499,37 @@ export async function syncMlsFixtureCatalog(apiKey: string | null) {
     })
     apiRequestsUsed++
 
-    const selectedFixtures = body.response.filter((fixture) => fixtureInSelectedPool(fixture, selectedTeamIds))
-    commits += await writeFixturePatches(db, selectedFixtures)
-    fixtures += selectedFixtures.length
+    const matchesByFixtureId = new Map<number, LocalMatchRow>()
+    const mappedFixtures: ApiFootballFixture[] = []
+    for (const fixture of body.response) {
+      const match = mapFixtureToLocalMatch(fixture, teamNameMap, matchesByTeams)
+      if (!match) {
+        unmappedFixtures++
+        continue
+      }
 
-    console.log(`[${league.name}] Synced ${selectedFixtures.length}/${body.response.length} selected fixtures`)
+      matchesByFixtureId.set(fixture.fixture.id, match)
+      mappedFixtures.push(fixture)
+    }
+
+    const result = await writeFixturePatches(mappedFixtures, matchesByFixtureId)
+    commits += result.commits
+    fixtures += result.updated
+
+    console.log(`[${league.name}] Synced ${result.updated}/${body.response.length} mapped fixtures`)
   }
 
   await db.doc('config/app').set({
     lastFixtureCatalogSyncAt: admin.firestore.FieldValue.serverTimestamp(),
     lastFixtureCatalogSyncLeagueIds: leagues.map((league) => league.id),
-    lastFixtureCatalogSyncSelectedTeamCount: selectedTeamIds?.size ?? null,
+    lastFixtureCatalogSyncSelectedTeamCount: null,
+    lastFixtureCatalogSyncUnmappedFixtureCount: unmappedFixtures,
   }, { merge: true })
 
   console.log(`Fixture catalog sync: ${fixtures} fixtures in ${commits} batch(es)`)
-  return { fixtures, apiRequestsUsed, commits }
+  return { fixtures, apiRequestsUsed, commits, unmappedFixtures }
 }
+
 
 export async function calculateSyncPeriod(now = new Date()) {
   const db = admin.firestore()
@@ -511,13 +657,26 @@ export async function syncLiveFixtures(apiKey: string | null, now = new Date()):
     .where('date', '<=', admin.firestore.Timestamp.fromDate(windowEnd))
     .get()
 
-  const fixtureIds = candidatesSnap.docs
-    .filter((docSnap) => {
-      const data = docSnap.data()
-      return data.status !== 'finished' && leagueIds.includes(Number(data.leagueId))
+  const matchesByFixtureId = new Map<number, LocalMatchRow>()
+  const fixtureIds: number[] = []
+
+  for (const docSnap of candidatesSnap.docs) {
+    const data = docSnap.data()
+    if (data.status === 'finished' || !leagueIds.includes(Number(data.leagueId))) continue
+
+    const fixtureId = fixtureIdFromMatch(docSnap)
+    const homeTeamId = typeof data.homeTeamId === 'string' ? data.homeTeamId : null
+    const awayTeamId = typeof data.awayTeamId === 'string' ? data.awayTeamId : null
+    if (fixtureId === null || !homeTeamId || !awayTeamId) continue
+
+    fixtureIds.push(fixtureId)
+    matchesByFixtureId.set(fixtureId, {
+      id: docSnap.id,
+      ref: docSnap.ref,
+      homeTeamId,
+      awayTeamId,
     })
-    .map(fixtureIdFromMatch)
-    .filter((id): id is number => id !== null)
+  }
 
   if (fixtureIds.length === 0) {
     return {
@@ -532,18 +691,18 @@ export async function syncLiveFixtures(apiKey: string | null, now = new Date()):
   const body = await apiFootballGet<ApiFootballFixture>(apiKey, '/fixtures', {
     ids: Array.from(new Set(fixtureIds)).join('-'),
   })
-  const commits = await writeFixturePatches(db, body.response)
+  const result = await writeFixturePatches(body.response, matchesByFixtureId)
 
   await db.doc('config/app').set({
     lastLiveSyncAt: admin.firestore.FieldValue.serverTimestamp(),
-    lastLiveSyncFixtureCount: body.response.length,
+    lastLiveSyncFixtureCount: result.updated,
   }, { merge: true })
 
-  console.log(`Live sync: ${body.response.length} fixture(s), ${commits} batch(es), period=${syncPeriodSeconds}s`)
+  console.log(`Live sync: ${result.updated}/${body.response.length} fixture(s), ${result.commits} batch(es), period=${syncPeriodSeconds}s`)
   return {
-    updated: body.response.length,
+    updated: result.updated,
     apiRequestsUsed: 1,
-    commits,
+    commits: result.commits,
     syncPeriodSeconds,
     syncPeriodMinutes: syncPeriodSeconds / 60,
   }

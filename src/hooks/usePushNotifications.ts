@@ -206,7 +206,7 @@ async function showForegroundNotification(payload: MessagePayload) {
     SERVICE_WORKER_READY_TIMEOUT_MS,
     'The app service worker was not ready in time.',
   )
-  const title = payload.data?.title ?? payload.notification?.title ?? 'World Cup 26'
+  const title = payload.data?.title ?? payload.notification?.title ?? 'Argy Bargy'
   const body = payload.data?.body ?? payload.notification?.body ?? ''
   const type = payload.data?.type
 

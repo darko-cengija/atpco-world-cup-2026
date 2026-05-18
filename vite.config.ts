@@ -28,8 +28,8 @@ export default defineConfig({
         ],
       },
       manifest: {
-        name: 'World Cup 26',
-        short_name: 'WC26',
+        name: 'Argy Bargy',
+        short_name: 'Argy Bargy',
         description: 'Fantasy football prediction app',
         theme_color: '#e6dcc5',
         background_color: '#e6dcc5',

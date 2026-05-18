@@ -1,1 +1,2 @@
-export const HOME_MATCH_WINDOW = 25
+export const HOME_MATCH_WINDOW = 4
+export const NEXT_PREDICTION_MATCH_WINDOW = 25

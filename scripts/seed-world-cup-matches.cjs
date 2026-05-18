@@ -16,6 +16,8 @@ const PROJECT_ID = requireFirebaseProjectId()
 const BASE = `/v1/projects/${PROJECT_ID}/databases/(default)/documents`
 const FIREBASE_CLIENT_ID = '563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com'
 const FIREBASE_CLIENT_SECRET = 'j9iVZfS8kkCEFUPaAeJV0sAi'
+const WORLD_CUP_LEAGUE_ID = 1
+const WORLD_CUP_SEASON = 2026
 
 function usageAndExit() {
   console.error('Usage: node scripts/seed-world-cup-matches.cjs --dry-run | --confirm | --verify')
@@ -220,6 +222,8 @@ function matchToFirestore(match) {
     qualifier: null,
     minute: null,
     statusShort: null,
+    leagueId: WORLD_CUP_LEAGUE_ID,
+    season: WORLD_CUP_SEASON,
     source: 'FIFA World Cup 2026 official group-stage schedule',
   }
 }
@@ -258,7 +262,7 @@ async function verifySeed(token) {
       continue
     }
 
-    for (const field of ['matchNumber', 'group', 'homeTeamId', 'awayTeamId', 'venue', 'stage', 'status']) {
+    for (const field of ['matchNumber', 'group', 'homeTeamId', 'awayTeamId', 'venue', 'stage', 'status', 'leagueId', 'season']) {
       if (remoteMatch[field] !== expected[field]) {
         failures.push(`${remoteMatch.id}.${field}: expected ${expected[field]}, got ${remoteMatch[field]}`)
       }

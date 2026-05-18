@@ -20,13 +20,13 @@ import { db } from '@/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Avatar } from '@/components/Avatar'
 import { getCountryName } from '@/lib/translations'
-import { HOME_MATCH_WINDOW } from '@/lib/config'
+import { NEXT_PREDICTION_MATCH_WINDOW } from '@/lib/config'
 import type { Match, Prediction, AppUser, PredictionOutcome } from '@/types'
 import { TicketSpinner } from '@/components/TicketMark'
 
 async function findNextUnpredictedMatch(currentMatchId: string, userId: string): Promise<string | null> {
   const [matchSnap, predSnap] = await Promise.all([
-    getDocs(query(collection(db, 'matches'), where('status', '==', 'upcoming'), orderBy('date', 'asc'), limit(HOME_MATCH_WINDOW))),
+    getDocs(query(collection(db, 'matches'), where('status', '==', 'upcoming'), orderBy('date', 'asc'), limit(NEXT_PREDICTION_MATCH_WINDOW))),
     getDocs(query(collection(db, 'predictions'), where('userId', '==', userId))),
   ])
 

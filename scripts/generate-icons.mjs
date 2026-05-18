@@ -69,7 +69,7 @@ function iconArtwork({ detail = 'full' } = {}) {
             stroke="${colors.ink}" stroke-opacity="0.4" stroke-width="2.6"/>
           <text x="${leftCenter}" y="333" text-anchor="middle"
             font-family='${fonts.mono}' font-size="20.5"
-            font-weight="800" letter-spacing="2" fill="${colors.stamp}">WC26</text>
+            font-weight="800" letter-spacing="2" fill="${colors.stamp}">AB</text>
 
           <text x="${rightCenter}" y="68" text-anchor="middle"
             font-family='${fonts.mono}' font-size="16.5"
@@ -96,7 +96,7 @@ function appIconSvg({ size = 512, detail = 'full', maskable = false } = {}) {
 
   return Buffer.from(`
     <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"
-      viewBox="0 0 512 512" role="img" aria-label="World Cup 26 Admit One Stub icon">
+      viewBox="0 0 512 512" role="img" aria-label="Argy Bargy Admit One Stub icon">
       <defs>${grainPattern()}</defs>
       ${
         maskable
@@ -117,7 +117,7 @@ function appIconSvg({ size = 512, detail = 'full', maskable = false } = {}) {
 function badgeSvg(size = 96) {
   return Buffer.from(`
     <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}"
-      viewBox="0 0 96 96" role="img" aria-label="World Cup 26 notification badge">
+      viewBox="0 0 96 96" role="img" aria-label="Argy Bargy notification badge">
       <rect x="8" y="8" width="80" height="80" rx="4" fill="none"
         stroke="#fff" stroke-width="5"/>
       <line x1="36.5" y1="8" x2="36.5" y2="88" stroke="#fff"
