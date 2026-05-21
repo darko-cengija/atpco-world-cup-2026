@@ -373,7 +373,7 @@ function validateLocalData() {
 function targetConfig() {
   return {
     competitionMode: 'world_cup_2026',
-    competitionName: 'Argy Bargy',
+    competitionName: 'Argy-Bargy',
     drawStatus: 'list_building',
     drawRankingSnapshot: RANKING_SNAPSHOT,
     drawRankingSnapshotDate: RANKING_SNAPSHOT_DATE,
@@ -487,7 +487,7 @@ function printPlan(state, mode) {
   console.log(`  matches: ${matches.length}`)
   console.log(`  config/app.competitionMode: world_cup_2026`)
   console.log(`  config/app.drawStatus: list_building`)
-  console.log(`  config/app.competitionName: Argy Bargy`)
+  console.log(`  config/app.competitionName: Argy-Bargy`)
 }
 
 async function backup(token) {
@@ -603,7 +603,7 @@ async function verify(token) {
   if (!config) failures.push('config/app is missing')
   else {
     if (config.competitionMode !== 'world_cup_2026') failures.push(`config.competitionMode is ${config.competitionMode}`)
-    if (config.competitionName !== 'Argy Bargy') failures.push(`config.competitionName is ${config.competitionName}`)
+    if (config.competitionName !== 'Argy-Bargy') failures.push(`config.competitionName is ${config.competitionName}`)
     if (config.drawStatus !== 'list_building') failures.push(`config.drawStatus is ${config.drawStatus}`)
     if (config.drawTeamCount !== 48) failures.push(`config.drawTeamCount is ${config.drawTeamCount}`)
     if (config.activeLeagueId !== WORLD_CUP_LEAGUE_ID) failures.push(`config.activeLeagueId is ${config.activeLeagueId}`)

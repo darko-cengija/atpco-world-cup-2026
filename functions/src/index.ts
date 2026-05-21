@@ -452,7 +452,7 @@ export const sendTestPushToCurrentUser = onCall({ region: FUNCTIONS_REGION }, as
     data: {
       type: 'test',
       title: 'Push test',
-      body: 'Argy Bargy notifications are registered on this device.',
+      body: 'Argy-Bargy notifications are registered on this device.',
       url: '/chat',
     },
     webpush: { headers: { Urgency: 'high' } },
@@ -708,12 +708,12 @@ export const sendInviteEmail = onCall(
     const result = await resend.emails.send({
       from,
       to: email,
-      subject: 'You are invited to Argy Bargy',
+      subject: 'You are invited to Argy-Bargy',
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;background:#0f172a;color:#f1f5f9;border-radius:12px;">
-          <h2 style="margin-top:0;color:#facc15;">Argy Bargy</h2>
+          <h2 style="margin-top:0;color:#facc15;">Argy-Bargy</h2>
           <p>${greeting}</p>
-          <p>You are invited to the private Argy Bargy app. Sign in with this email address to join.</p>
+          <p>You are invited to the private Argy-Bargy app. Sign in with this email address to join.</p>
           <a href="${url}?install=1" style="display:inline-block;margin-top:16px;padding:12px 24px;background:#facc15;color:#0f172a;border-radius:8px;font-weight:700;text-decoration:none;">
             Open the app
           </a>

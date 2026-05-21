@@ -153,7 +153,7 @@ export function InstallAppPrompt() {
         </div>
         <h2 className="mt-5 font-display text-3xl leading-none text-brand-ink">App Installed</h2>
         <p className="mt-3 text-sm leading-6 text-brand-muted">
-          Close this tab and open the Argy Bargy icon from your Home Screen.
+          Close this tab and open the Argy-Bargy icon from your Home Screen.
         </p>
         <button
           onClick={() => setInstalled(false)}
@@ -187,7 +187,7 @@ export function InstallAppPrompt() {
 
           <div className="min-w-0 flex-1">
             <p className="font-display text-lg leading-none text-brand-ink">
-              {isIosSafari ? 'Add to Home Screen' : isIosOther ? 'Open in Safari' : 'Install Argy Bargy'}
+              {isIosSafari ? 'Add to Home Screen' : isIosOther ? 'Open in Safari' : 'Install Argy-Bargy'}
             </p>
 
             {isIosSafari ? (

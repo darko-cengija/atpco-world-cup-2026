@@ -65,7 +65,7 @@ export default function Home() {
           <span>{matches.length || HOME_MATCH_WINDOW} fixtures</span>
         </div>
         <h1 className="font-display text-[2.6rem] leading-none text-brand-ink">Upcoming<br />matches</h1>
-        <p className="ticket-meta mt-2">{config.competitionName ?? 'Argy Bargy'}</p>
+        <p className="ticket-meta mt-2">{config.competitionName ?? 'Argy-Bargy'}</p>
       </div>
 
       <div className="space-y-4">

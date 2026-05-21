@@ -243,7 +243,7 @@ async function verifySeed(token) {
   } else {
     if (config.drawStatus !== 'list_building') failures.push(`config.drawStatus: ${config.drawStatus}`)
     if (config.competitionMode !== 'world_cup_2026') failures.push(`config.competitionMode: ${config.competitionMode}`)
-    if (config.competitionName !== 'Argy Bargy') failures.push(`config.competitionName: ${config.competitionName}`)
+    if (config.competitionName !== 'Argy-Bargy') failures.push(`config.competitionName: ${config.competitionName}`)
     if (config.drawRankingSnapshot !== RANKING_SNAPSHOT) failures.push(`config.drawRankingSnapshot: ${config.drawRankingSnapshot}`)
     if (config.drawTeamCount !== 48) failures.push(`config.drawTeamCount: ${config.drawTeamCount}`)
     if (config.teamsPerPlayer !== 48) failures.push(`config.teamsPerPlayer: ${config.teamsPerPlayer}`)
@@ -307,7 +307,7 @@ async function main() {
 
   await patchDocument('config/app', {
     competitionMode: 'world_cup_2026',
-    competitionName: 'Argy Bargy',
+    competitionName: 'Argy-Bargy',
     drawStatus: 'list_building',
     drawRankingSnapshot: RANKING_SNAPSHOT,
     drawRankingSnapshotDate: RANKING_SNAPSHOT_DATE,
