@@ -7,7 +7,7 @@ import {
   doc,
   setDoc,
   deleteDoc,
-  getDocFromServer,
+  getDoc,
   query,
   where,
   Timestamp,
@@ -58,35 +58,56 @@ export default function PlayersAndTeams() {
   async function load() {
     setLoading(true)
 
-    const configSnap = await getDocFromServer(doc(db, 'config', 'app'))
-    if (configSnap.exists()) {
-      const cfg = configSnap.data() as Config
-      setConfig(cfg)
-      const gsa = configSnap.data()?.gameStartedAt as Timestamp | undefined
-      setGameStartedAt(gsa ?? null)
+    try {
+      const teamsQuery = query(collection(db, 'teams'), where('drawEligible', '==', true))
+      const [configSnap, teamsSnap, usersSnap, playerTeamsSnap] = await Promise.all([
+        getDoc(doc(db, 'config', 'app')),
+        getDocs(teamsQuery),
+        getDocs(collection(db, 'users')),
+        getDocs(collection(db, 'playerTeams')),
+      ])
+
+      if (configSnap.exists()) {
+        const cfg = configSnap.data() as Config
+        setConfig(cfg)
+        const gsa = configSnap.data()?.gameStartedAt as Timestamp | undefined
+        setGameStartedAt(gsa ?? null)
+      } else {
+        setConfig({})
+        setGameStartedAt(null)
+      }
+
+      const teams: Team[] = teamsSnap.docs
+        .map((d) => ({ id: d.id, ...d.data() } as Team))
+        .sort((a, b) => a.name.localeCompare(b.name))
+      setAllTeams(teams)
+
+      const players = usersSnap.docs.map((d) => ({ uid: d.id, ...d.data() } as AppUser))
+      const assignedTeamIdsByUserId = new Map<string, Set<string>>()
+
+      for (const assignmentDoc of playerTeamsSnap.docs) {
+        const data = assignmentDoc.data() as { userId?: string; teamId?: string }
+        if (!data.userId || !data.teamId) continue
+
+        const assignedTeamIds = assignedTeamIdsByUserId.get(data.userId) ?? new Set<string>()
+        assignedTeamIds.add(data.teamId)
+        assignedTeamIdsByUserId.set(data.userId, assignedTeamIds)
+      }
+
+      const playerRows = players.map((player) => {
+        const assignedTeamIds = assignedTeamIdsByUserId.get(player.uid) ?? new Set<string>()
+        return {
+          user: player,
+          teams: teams.filter((team) => assignedTeamIds.has(team.id)),
+        }
+      })
+
+      setRows(playerRows)
+    } catch (err) {
+      console.error('Failed to load players and teams.', err)
+    } finally {
+      setLoading(false)
     }
-    const teamsQuery = query(collection(db, 'teams'), where('drawEligible', '==', true))
-    const teamsSnap = await getDocs(teamsQuery)
-    const teams: Team[] = teamsSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Team))
-    setAllTeams(teams.sort((a, b) => a.name.localeCompare(b.name)))
-
-    // Load all players
-    const usersSnap = await getDocs(collection(db, 'users'))
-    const players = usersSnap.docs.map((d) => ({ uid: d.id, ...d.data() } as AppUser))
-
-    // For each player, find their assigned teams
-    const playerRows: PlayerRow[] = []
-    for (const player of players) {
-      const ptSnap = await getDocs(
-        query(collection(db, 'playerTeams'), where('userId', '==', player.uid)),
-      )
-      const assignedTeamIds = ptSnap.docs.map((d) => d.data().teamId as string)
-      const assignedTeams = teams.filter((t) => assignedTeamIds.includes(t.id))
-      playerRows.push({ user: player, teams: assignedTeams })
-    }
-
-    setRows(playerRows)
-    setLoading(false)
   }
 
   async function assignTeam(userId: string, team: Team) {

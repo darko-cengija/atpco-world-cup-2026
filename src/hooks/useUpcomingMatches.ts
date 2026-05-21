@@ -25,6 +25,24 @@ export function useUpcomingMatches(count = 4) {
   const loadVersionRef = useRef(0)
   const lastForegroundRefreshAtRef = useRef(0)
   const teamCacheRef = useRef<Record<string, Team>>({})
+  const teamPreloadRef = useRef<Promise<void> | null>(null)
+
+  const preloadTeams = useCallback(() => {
+    if (!teamPreloadRef.current) {
+      teamPreloadRef.current = getDocs(collection(db, 'teams'))
+        .then((snap) => {
+          for (const teamDoc of snap.docs) {
+            teamCacheRef.current[teamDoc.id] = { id: teamDoc.id, ...teamDoc.data() } as Team
+          }
+        })
+        .catch((err) => {
+          teamPreloadRef.current = null
+          throw err
+        })
+    }
+
+    return teamPreloadRef.current
+  }, [])
 
   const fetchTeamsByIds = useCallback(async (teamIds: string[]) => {
     const uniqueIds = [...new Set(teamIds)]
@@ -47,6 +65,12 @@ export function useUpcomingMatches(count = 4) {
   }, [])
 
   const buildMatchesFromSnapshot = useCallback(async (snap: QuerySnapshot<DocumentData>) => {
+    try {
+      await preloadTeams()
+    } catch (err) {
+      console.warn('Failed to preload teams before fixtures; falling back to fixture team lookup.', err)
+    }
+
     const teamsById = await fetchTeamsByIds(
       snap.docs.flatMap((docSnap) => {
         const data = docSnap.data()
@@ -82,7 +106,7 @@ export function useUpcomingMatches(count = 4) {
     }
 
     return results
-  }, [fetchTeamsByIds])
+  }, [fetchTeamsByIds, preloadTeams])
 
   const applyMatchesFromSnapshot = useCallback(async (snap: QuerySnapshot<DocumentData>) => {
     const currentVersion = ++loadVersionRef.current
@@ -102,6 +126,8 @@ export function useUpcomingMatches(count = 4) {
       limit(count),
     )
     let disposed = false
+
+    void preloadTeams().catch(() => undefined)
 
     const refreshFromServer = async () => {
       try {
@@ -154,7 +180,7 @@ export function useUpcomingMatches(count = 4) {
       document.removeEventListener('visibilitychange', refreshOnForeground)
       window.removeEventListener('focus', refreshOnForeground)
     }
-  }, [applyMatchesFromSnapshot, count])
+  }, [applyMatchesFromSnapshot, count, preloadTeams])
 
   return { matches, loading, error }
 }
