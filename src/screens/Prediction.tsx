@@ -20,17 +20,49 @@ import { db } from '@/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { Avatar } from '@/components/Avatar'
 import { getCountryName } from '@/lib/translations'
-import { NEXT_PREDICTION_MATCH_WINDOW } from '@/lib/config'
+import { PREDICTION_MATCH_WINDOW } from '@/lib/config'
 import type { Match, Prediction, AppUser, PredictionOutcome } from '@/types'
 import { TicketSpinner } from '@/components/TicketMark'
 
+const SAVE_TIMEOUT_MS = 15000
+
+function predictionWindowQuery() {
+  return query(
+    collection(db, 'matches'),
+    where('status', 'in', ['upcoming', 'live']),
+    orderBy('date', 'asc'),
+    limit(PREDICTION_MATCH_WINDOW),
+  )
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
+
+  const timeout = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(message)), ms)
+  })
+
+  return Promise.race([
+    promise.finally(() => {
+      if (timeoutId) clearTimeout(timeoutId)
+    }),
+    timeout,
+  ])
+}
+
 async function findNextUnpredictedMatch(currentMatchId: string, userId: string): Promise<string | null> {
   const [matchSnap, predSnap] = await Promise.all([
-    getDocs(query(collection(db, 'matches'), where('status', '==', 'upcoming'), orderBy('date', 'asc'), limit(NEXT_PREDICTION_MATCH_WINDOW))),
+    getDocs(predictionWindowQuery()),
     getDocs(query(collection(db, 'predictions'), where('userId', '==', userId))),
   ])
 
-  const orderedMatchIds = matchSnap.docs.map((d) => d.id)
+  const now = Date.now()
+  const orderedMatchIds = matchSnap.docs
+    .filter((d) => {
+      const data = d.data()
+      return data.status === 'upcoming' && data.date.toDate().getTime() > now
+    })
+    .map((d) => d.id)
   const predicted = new Set(predSnap.docs.map(d => d.data().matchId))
   predicted.add(currentMatchId)
 
@@ -96,7 +128,10 @@ export default function Prediction() {
   const [selectedOutcome, setSelectedOutcome] = useState<PredictionOutcome | null>(null)
   const [allPredictions, setAllPredictions] = useState<PredictionWithUser[]>([])
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [predictionWindowLoading, setPredictionWindowLoading] = useState(true)
+  const [isInPredictionWindow, setIsInPredictionWindow] = useState(false)
   const [navigating, setNavigating] = useState(false)
   const [, forceTick] = useState(0)
   const navTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -104,6 +139,26 @@ export default function Prediction() {
   useEffect(() => () => { if (navTimerRef.current) clearTimeout(navTimerRef.current) }, [])
 
   useEffect(() => { window.scrollTo(0, 0) }, [])
+
+  useEffect(() => {
+    if (!matchId) return
+
+    setPredictionWindowLoading(true)
+    const unsubscribe = onSnapshot(
+      predictionWindowQuery(),
+      (snap) => {
+        setIsInPredictionWindow(snap.docs.some((docSnap) => docSnap.id === matchId))
+        setPredictionWindowLoading(false)
+      },
+      (err) => {
+        console.error('Prediction window listener failed.', err)
+        setIsInPredictionWindow(false)
+        setPredictionWindowLoading(false)
+      },
+    )
+
+    return unsubscribe
+  }, [matchId])
 
   useEffect(() => {
     if (!match) return
@@ -189,19 +244,41 @@ export default function Prediction() {
   async function handleSubmit() {
     if (!matchId || !user || !selectedOutcome) return
     if (!match || match.status !== 'upcoming' || match.date.getTime() <= Date.now()) return
+    if (predictionWindowLoading || !isInPredictionWindow) return
 
     setSaving(true)
+    setSaveError(null)
     const predId = `${matchId}_${user.uid}`
-    await setDoc(doc(db, 'predictions', predId), {
-      matchId,
-      userId: user.uid,
-      outcome: selectedOutcome,
-      submittedAt: serverTimestamp(),
-    })
-    setSaving(false)
+
+    try {
+      await withTimeout(
+        setDoc(doc(db, 'predictions', predId), {
+          matchId,
+          userId: user.uid,
+          outcome: selectedOutcome,
+          submittedAt: serverTimestamp(),
+        }),
+        SAVE_TIMEOUT_MS,
+        'Prediction save timed out.',
+      )
+    } catch (err) {
+      console.error('Failed to save prediction.', err)
+      setSaveError('Prediction could not be saved. Please try again.')
+      return
+    } finally {
+      setSaving(false)
+    }
+
     setNavigating(true)
 
-    const nextId = await findNextUnpredictedMatch(matchId, user.uid)
+    let nextId: string | null = null
+    try {
+      nextId = await findNextUnpredictedMatch(matchId, user.uid)
+    } catch (err) {
+      console.error('Failed to find next prediction match.', err)
+    }
+
+    if (navTimerRef.current) clearTimeout(navTimerRef.current)
     navTimerRef.current = setTimeout(() => {
       if (nextId) {
         navigate(`/match/${nextId}`, { replace: true })
@@ -227,13 +304,21 @@ export default function Prediction() {
     )
   }
 
-  const isLocked = match.status !== 'upcoming' || match.date.getTime() <= Date.now()
+  const now = Date.now()
+  const matchClosed = match.status !== 'upcoming' || match.date.getTime() <= now
+  const canEditPrediction = !matchClosed && !predictionWindowLoading && isInPredictionWindow
   const knockout = isKnockout(match.stage)
   const outcomes: PredictionOutcome[] = knockout ? ['1', 'X1', 'X2', '2'] : ['1', 'X', '2']
 
   const savedOutcome = allPredictions.find(p => p.userId === user?.uid)?.outcome ?? null
   const isSaved = selectedOutcome !== null && selectedOutcome === savedOutcome
   const isDirty = selectedOutcome !== null && selectedOutcome !== savedOutcome
+  const lockMessage = predictionWindowLoading
+    ? 'Checking prediction window...'
+    : !isInPredictionWindow && !matchClosed
+      ? 'Predictions open when this match reaches the Home screen.'
+      : 'No prediction · Locked'
+  const showPredictionsList = allPredictions.length > 0 && (canEditPrediction || matchClosed)
 
   return (
     <div className="min-h-screen bg-brand-bg">
@@ -246,7 +331,7 @@ export default function Prediction() {
           <p className="ticket-meta">Match ticket</p>
           <h1 className="font-display text-xl leading-none text-brand-ink">Prediction</h1>
         </div>
-        {isLocked && <Lock size={16} className="text-brand-gold ml-auto" />}
+        {!canEditPrediction && <Lock size={16} className="text-brand-gold ml-auto" />}
       </div>
 
       <div className="px-4 space-y-6">
@@ -269,7 +354,7 @@ export default function Prediction() {
               <span className="ticket-meta mt-2">{match.homeTeamId.slice(0, 3)}</span>
               <span className="font-display text-lg leading-tight text-brand-ink text-center">{getCountryName(match.homeTeam.name)}</span>
             </div>
-            {isLocked && match.homeScore !== null && match.awayScore !== null ? (
+            {matchClosed && match.homeScore !== null && match.awayScore !== null ? (
               <div className="flex flex-col items-center self-center px-3">
                 {match.status === 'live' && (
                   <span className="ticket-pill ticket-pill-stamp mb-1">Live</span>
@@ -296,8 +381,12 @@ export default function Prediction() {
             {outcomes.map((o) => (
               <button
                 key={o}
-                onClick={() => !isLocked && setSelectedOutcome(o)}
-                disabled={isLocked}
+                onClick={() => {
+                  if (!canEditPrediction) return
+                  setSelectedOutcome(o)
+                  setSaveError(null)
+                }}
+                disabled={!canEditPrediction}
                 className={`relative flex-1 rounded-md border px-2 py-3 transition-colors ${
                   selectedOutcome === o
                     ? 'bg-brand-accent text-brand-bg border-brand-accent shadow-lg shadow-brand-ink/15'
@@ -315,7 +404,7 @@ export default function Prediction() {
         </div>
 
         {/* Submit button */}
-        {!isLocked && (
+        {canEditPrediction && (
           <motion.button
             onClick={handleSubmit}
             disabled={saving || navigating || !isDirty}
@@ -338,7 +427,13 @@ export default function Prediction() {
           </motion.button>
         )}
 
-        {isLocked && (
+        {saveError && (
+          <p className="border-l-4 border-brand-stamp bg-brand-stamp/10 px-4 py-3 text-sm text-brand-stamp">
+            {saveError}
+          </p>
+        )}
+
+        {!canEditPrediction && (
           savedOutcome ? (
             <div className="ticket-card flex w-full items-center justify-center gap-2 px-4 py-4 font-semibold text-emerald-700">
               <CheckCircle2 size={18} />
@@ -346,13 +441,13 @@ export default function Prediction() {
             </div>
           ) : (
             <div className="w-full rounded border border-dashed border-brand-border py-4 text-center font-semibold text-brand-faint">
-              No prediction · Locked
+              {lockMessage}
             </div>
           )
         )}
 
         {/* Other players' predictions */}
-        {allPredictions.length > 0 && (
+        {showPredictionsList && (
           <div>
             <h2 className="ticket-meta mb-3 text-brand-muted">
               Everyone's Predictions
