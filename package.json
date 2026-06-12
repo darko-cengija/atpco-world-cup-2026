@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "assets:generate": "node scripts/generate-icons.mjs",
     "audit:winning-chances": "npm --prefix functions run build && node scripts/audit-winning-chances-snapshots.cjs",
-    "audit:knockout-predictions": "node scripts/audit-knockout-predictions.cjs",
+    "audit:knockout-predictions": "npm --prefix functions run build && node scripts/audit-knockout-predictions.cjs",
     "seed:mls-test": "node scripts/seed-mls-test-tournament.cjs",
     "seed:hybrid-test": "node scripts/seed-hybrid-test-tournament.cjs"
   },

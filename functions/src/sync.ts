@@ -242,16 +242,27 @@ function syncPeriodSecondsFromConfig(config: admin.firestore.DocumentData) {
   return DEFAULT_LIVE_SYNC_PERIOD_SECONDS
 }
 
-function getQualifier(fixture: ApiFootballFixture): 'home' | 'away' | null {
-  const { short } = fixture.fixture.status
-  if (!['AET', 'PEN'].includes(short)) return null
+function scoresTied(home: number | null, away: number | null) {
+  return home !== null && away !== null && home === away
+}
 
-  const { fulltime } = fixture.score
-  if (fulltime.home === null || fulltime.away === null) return null
-  if (fulltime.home !== fulltime.away) return null
+function advancingSide(fixture: ApiFootballFixture): 'home' | 'away' | null {
   if (fixture.teams.home.winner) return 'home'
   if (fixture.teams.away.winner) return 'away'
   return null
+}
+
+function getQualifier(fixture: ApiFootballFixture, stage: string): 'home' | 'away' | null {
+  if (!isKnockoutStage(stage)) return null
+
+  const side = advancingSide(fixture)
+  if (!side) return null
+
+  const { fulltime } = fixture.score
+  const regularTimeTied = scoresTied(fulltime.home, fulltime.away)
+  const finalScoreTied = scoresTied(fixtureScore(fixture, 'home'), fixtureScore(fixture, 'away'))
+
+  return regularTimeTied || finalScoreTied ? side : null
 }
 
 async function apiFootballGet<T>(apiKey: string, path: string, params: Record<string, string | number>) {
@@ -343,17 +354,18 @@ function fixtureToMatchPatch(
   const isExtraTimeFinal = ['AET', 'PEN'].includes(fixture.fixture.status.short)
   const fulltimeHome = fixture.score.fulltime.home
   const fulltimeAway = fixture.score.fulltime.away
+  const stage = normalizeStage(fixture.league.round)
 
   return {
     homeTeamId: localTeams?.homeTeamId ?? String(fixture.teams.home.id),
     awayTeamId: localTeams?.awayTeamId ?? String(fixture.teams.away.id),
     date: admin.firestore.Timestamp.fromDate(new Date(fixture.fixture.date)),
     venue: fixture.fixture.venue?.name ?? fixture.fixture.venue?.city ?? '',
-    stage: normalizeStage(fixture.league.round),
+    stage,
     status,
     homeScore: fixtureScore(fixture, 'home'),
     awayScore: fixtureScore(fixture, 'away'),
-    qualifier: getQualifier(fixture),
+    qualifier: getQualifier(fixture, stage),
     minute: status === 'live' ? fixture.fixture.status.elapsed : null,
     stoppageTime: status === 'live' ? fixture.fixture.status.extra ?? null : null,
     statusShort: status === 'live' ? fixture.fixture.status.short : null,
@@ -808,4 +820,8 @@ export async function syncLiveFixturesLoop(apiKey: string | null, now = new Date
   } finally {
     await releaseLiveSyncLease(db, ownerId)
   }
+}
+
+export const __syncTest = {
+  getQualifier,
 }

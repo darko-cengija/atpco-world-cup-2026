@@ -167,21 +167,71 @@ function signatureForRange(played, predicate) {
 }
 
 function pointsFromPlayed(player, played) {
+  return standingFromPlayed(player, played).points
+}
+
+function standingFromPlayed(player, played) {
   const owned = new Set(player.teamIds)
-  let points = 0
+  const standing = { played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0 }
 
   for (const match of played) {
-    const isHome = owned.has(match.homeTeamId)
-    const isAway = owned.has(match.awayTeamId)
-    if (!isHome && !isAway) continue
+    const ownedResults = []
+    if (owned.has(match.homeTeamId)) {
+      ownedResults.push({ gf: match.homeScore, ga: match.awayScore })
+    }
+    if (owned.has(match.awayTeamId)) {
+      ownedResults.push({ gf: match.awayScore, ga: match.homeScore })
+    }
 
-    const gf = isHome ? match.homeScore : match.awayScore
-    const ga = isHome ? match.awayScore : match.homeScore
-    if (gf > ga) points += 3
-    else if (gf === ga) points += 1
+    for (const { gf, ga } of ownedResults) {
+      standing.played++
+      standing.gf += gf
+      standing.ga += ga
+      if (gf > ga) {
+        standing.won++
+        standing.points += 3
+      } else if (gf === ga) {
+        standing.drawn++
+        standing.points += 1
+      } else {
+        standing.lost++
+      }
+    }
   }
 
-  return points
+  standing.gd = standing.gf - standing.ga
+  return standing
+}
+
+function assertOwnedBothSidesRegression() {
+  const player = {
+    userId: 'jessica',
+    displayName: 'Jessica',
+    avatarUrl: null,
+    teamIds: ['korea-republic', 'czechia'],
+  }
+  const played = [{
+    matchNumber: 2,
+    stage: 'Group Stage',
+    homeTeamId: 'korea-republic',
+    awayTeamId: 'czechia',
+    homeScore: 2,
+    awayScore: 1,
+    winnerTeamId: 'korea-republic',
+    loserTeamId: 'czechia',
+  }]
+  const expected = { played: 2, won: 1, drawn: 0, lost: 1, gf: 3, ga: 3, gd: 0, points: 3 }
+  const actual = standingFromPlayed(player, played)
+  const simulated = __winningChancesTest.playerStanding(player, played, new Map())
+
+  for (const [field, value] of Object.entries(expected)) {
+    if (actual[field] !== value) {
+      throw new Error(`Owned-both-sides audit regression failed for ${field}: expected ${value}, got ${actual[field]}`)
+    }
+    if (simulated[field] !== value) {
+      throw new Error(`Owned-both-sides simulation regression failed for ${field}: expected ${value}, got ${simulated[field]}`)
+    }
+  }
 }
 
 function formatNumber(value) {
@@ -303,6 +353,8 @@ function main() {
 
   console.log(`Winning chances snapshot audit (${iterations.toLocaleString()} iterations)`)
   console.log('Synthetic fixed results are derived from one deterministic baseline tournament.')
+  assertOwnedBothSidesRegression()
+  console.log('Owned-both-sides player standing regression: OK')
 
   for (const finishedThrough of SNAPSHOTS) {
     runSnapshot({ finishedThrough, iterations, teams, players, baselinePlayed })

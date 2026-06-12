@@ -182,7 +182,6 @@ export default function PredictionStandings() {
           <li>
             A correct prediction earns {playerCount}/n points, where n is the number of players who got it right.
           </li>
-          <li>If you make no prediction for a match, you lose 1/{playerCount} points.</li>
         </ul>
       )}
     </div>

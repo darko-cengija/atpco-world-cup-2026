@@ -5,6 +5,7 @@ import { collection, getDocs, query, where, doc, getDoc, Timestamp } from 'fireb
 import { db } from '@/firebase'
 import { useAuth } from '@/contexts/AuthContext'
 import { getCountryName, getStageName } from '@/lib/translations'
+import { actualOutcome as computeActualOutcome } from '@/lib/predictions'
 import type { AppUser, Match, PredictionOutcome } from '@/types'
 import { TicketSpinner } from '@/components/TicketMark'
 
@@ -17,20 +18,6 @@ interface FinishedMatch {
   match: Match
   actualOutcome: PredictionOutcome
   predictions: PredictionEntry[]
-}
-
-function computeOutcome(
-  home: number,
-  away: number,
-  stage: string,
-  qualifier: 'home' | 'away' | null,
-): PredictionOutcome {
-  if (home > away) return '1'
-  if (home < away) return '2'
-  if (!stage.toLowerCase().includes('group') && qualifier) {
-    return qualifier === 'home' ? 'X1' : 'X2'
-  }
-  return 'X'
 }
 
 export default function FinishedMatches() {
@@ -142,7 +129,7 @@ export default function FinishedMatches() {
           }
           return {
             match,
-            actualOutcome: computeOutcome(homeScore, awayScore, stage, qualifier),
+            actualOutcome: computeActualOutcome(homeScore, awayScore, qualifier),
             predictions: predictionMap[_raw.id] ?? [],
           }
         })

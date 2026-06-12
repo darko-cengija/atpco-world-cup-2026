@@ -19,6 +19,10 @@ interface TeamRow {
   name: string
   group: GroupCode
   fifaRank?: number
+  fifaPoints?: number
+  replacement?: {
+    active?: boolean
+  }
   apiFootballAliases?: string[]
 }
 
@@ -145,6 +149,57 @@ const ODDS_WINDOW_DAYS = 14
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 const GROUP_CODES: GroupCode[] = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
 
+const FIFA_POINTS_BY_TEAM_ID: Record<string, number> = {
+  france: 1877.32,
+  spain: 1876.40,
+  argentina: 1874.81,
+  england: 1825.97,
+  portugal: 1763.83,
+  brazil: 1761.16,
+  netherlands: 1757.87,
+  morocco: 1755.87,
+  belgium: 1734.71,
+  germany: 1730.37,
+  croatia: 1717.07,
+  colombia: 1693.09,
+  senegal: 1688.99,
+  mexico: 1681.03,
+  usa: 1673.13,
+  uruguay: 1673.07,
+  japan: 1660.43,
+  switzerland: 1649.40,
+  iran: 1615.30,
+  turkiye: 1599.04,
+  ecuador: 1594.78,
+  austria: 1593.45,
+  'korea-republic': 1588.66,
+  australia: 1580.67,
+  algeria: 1564.26,
+  egypt: 1563.24,
+  canada: 1556.48,
+  norway: 1550.94,
+  panama: 1540.64,
+  'cote-divoire': 1532.98,
+  sweden: 1514.77,
+  paraguay: 1503.50,
+  czechia: 1501.38,
+  scotland: 1498.35,
+  tunisia: 1483.05,
+  'congo-dr': 1478.35,
+  uzbekistan: 1465.34,
+  qatar: 1454.96,
+  iraq: 1447.14,
+  'south-africa': 1429.73,
+  'saudi-arabia': 1421.43,
+  jordan: 1391.45,
+  'bosnia-and-herzegovina': 1385.84,
+  'cabo-verde': 1366.13,
+  ghana: 1346.31,
+  curacao: 1294.65,
+  haiti: 1291.71,
+  'new-zealand': 1281.57,
+}
+
 const R16_PAIRINGS: Array<[number, number, number]> = [
   [89, 74, 77],
   [90, 73, 75],
@@ -231,7 +286,15 @@ function samplePoisson(lambda: number, rng: () => number) {
 }
 
 function teamRating(teamId: string, teamById: Map<string, TeamRow>) {
-  const rank = teamById.get(teamId)?.fifaRank ?? 100
+  const team = teamById.get(teamId)
+  if (team?.replacement?.active !== true) {
+    const points = typeof team?.fifaPoints === 'number'
+      ? team.fifaPoints
+      : FIFA_POINTS_BY_TEAM_ID[teamId]
+    if (typeof points === 'number') return points
+  }
+
+  const rank = team?.fifaRank ?? 100
   return 2150 - (rank - 1) * 8
 }
 
@@ -691,24 +754,28 @@ function playerStanding(player: PlayerRow, played: PlayedMatch[], eliminationRan
   const owned = new Set(player.teamIds)
 
   for (const match of played) {
-    const isHome = owned.has(match.homeTeamId)
-    const isAway = owned.has(match.awayTeamId)
-    if (!isHome && !isAway) continue
+    const ownedResults: Array<{ gf: number; ga: number }> = []
+    if (owned.has(match.homeTeamId)) {
+      ownedResults.push({ gf: match.homeScore, ga: match.awayScore })
+    }
+    if (owned.has(match.awayTeamId)) {
+      ownedResults.push({ gf: match.awayScore, ga: match.homeScore })
+    }
 
-    const teamGF = isHome ? match.homeScore : match.awayScore
-    const teamGA = isHome ? match.awayScore : match.homeScore
-    playedCount++
-    gf += teamGF
-    ga += teamGA
+    for (const { gf: teamGF, ga: teamGA } of ownedResults) {
+      playedCount++
+      gf += teamGF
+      ga += teamGA
 
-    if (teamGF > teamGA) {
-      won++
-      points += 3
-    } else if (teamGF === teamGA) {
-      drawn++
-      points += 1
-    } else {
-      lost++
+      if (teamGF > teamGA) {
+        won++
+        points += 3
+      } else if (teamGF === teamGA) {
+        drawn++
+        points += 1
+      } else {
+        lost++
+      }
     }
   }
 
@@ -1091,11 +1158,16 @@ async function loadInputs(db: admin.firestore.Firestore) {
   const teams = teamsSnap.docs
     .map((docSnap) => {
       const data = docSnap.data()
+      const replacement = data.replacement as { active?: unknown } | undefined
       return {
         id: docSnap.id,
         name: (data.name as string | undefined) ?? docSnap.id,
         group: (data.group as GroupCode | undefined) ?? 'A',
         fifaRank: data.fifaRank as number | undefined,
+        fifaPoints: typeof data.fifaPoints === 'number' ? data.fifaPoints : undefined,
+        replacement: replacement && typeof replacement === 'object'
+          ? { active: replacement.active === true }
+          : undefined,
         apiFootballAliases: Array.isArray(data.apiFootballAliases)
           ? data.apiFootballAliases.filter((alias): alias is string => typeof alias === 'string')
           : [],
@@ -1183,7 +1255,7 @@ export async function refreshWinningChances(apiKey: string | null, now = new Dat
     rows,
     simulationCount: SIMULATION_COUNT,
     generatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    model: 'api-football-odds-with-rank-fallback',
+    model: 'api-football-odds-with-fifa-points-fallback',
     oddsStatus,
     oddsFixtureCount,
     oddsBackedMatches,

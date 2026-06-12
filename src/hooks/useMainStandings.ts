@@ -160,22 +160,28 @@ export function useMainStandings() {
 
         let played = 0, won = 0, drawn = 0, lost = 0, gf = 0, ga = 0, points = 0
 
+        const ownedTeamIds = new Set(teamIds)
+
         for (const m of matchRows) {
-          const isHome = teamIds.includes(m.homeTeamId)
-          const isAway = teamIds.includes(m.awayTeamId)
-          if (!isHome && !isAway) continue
           if (m.homeScore == null || m.awayScore == null) continue
 
-          const teamGF = isHome ? m.homeScore : m.awayScore
-          const teamGA = isHome ? m.awayScore : m.homeScore
+          const ownedResults: Array<{ gf: number; ga: number }> = []
+          if (ownedTeamIds.has(m.homeTeamId)) {
+            ownedResults.push({ gf: m.homeScore, ga: m.awayScore })
+          }
+          if (ownedTeamIds.has(m.awayTeamId)) {
+            ownedResults.push({ gf: m.awayScore, ga: m.homeScore })
+          }
 
-          played++
-          gf += teamGF
-          ga += teamGA
+          for (const { gf: teamGF, ga: teamGA } of ownedResults) {
+            played++
+            gf += teamGF
+            ga += teamGA
 
-          if (teamGF > teamGA) { won++; points += 3 }
-          else if (teamGF === teamGA) { drawn++; points += 1 }
-          else { lost++ }
+            if (teamGF > teamGA) { won++; points += 3 }
+            else if (teamGF === teamGA) { drawn++; points += 1 }
+            else { lost++ }
+          }
         }
 
         result.push({

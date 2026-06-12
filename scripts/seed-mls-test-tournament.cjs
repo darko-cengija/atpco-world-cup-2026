@@ -405,14 +405,29 @@ function syncPeriodForPollingWindows(windows) {
   }
 }
 
-function getQualifier(fixture) {
-  const short = fixture.fixture.status.short
-  if (!['AET', 'PEN'].includes(short)) return null
-  const fulltime = fixture.score.fulltime
-  if (fulltime.home === null || fulltime.away === null || fulltime.home !== fulltime.away) return null
+function fixtureScore(fixture, side) {
+  return fixture.goals[side] ?? fixture.score.fulltime[side]
+}
+
+function scoresTied(home, away) {
+  return home !== null && away !== null && home === away
+}
+
+function advancingSide(fixture) {
   if (fixture.teams.home.winner) return 'home'
   if (fixture.teams.away.winner) return 'away'
   return null
+}
+
+function getQualifier(fixture, stage) {
+  if (!isKnockoutStage(stage)) return null
+  const side = advancingSide(fixture)
+  if (!side) return null
+
+  const fulltime = fixture.score.fulltime
+  const regularTimeTied = scoresTied(fulltime.home, fulltime.away)
+  const finalScoreTied = scoresTied(fixtureScore(fixture, 'home'), fixtureScore(fixture, 'away'))
+  return regularTimeTied || finalScoreTied ? side : null
 }
 
 function flattenStandings(standingsBody) {
@@ -473,6 +488,7 @@ function matchToFirestore(fixture, matchNumber) {
   const isExtraTimeFinal = ['AET', 'PEN'].includes(fixture.fixture.status.short)
   const fulltimeHome = fixture.score.fulltime.home
   const fulltimeAway = fixture.score.fulltime.away
+  const stage = normalizeStage(fixture.league.round)
 
   return {
     matchNumber,
@@ -481,11 +497,11 @@ function matchToFirestore(fixture, matchNumber) {
     awayTeamId: String(fixture.teams.away.id),
     date: new Date(fixture.fixture.date),
     venue: fixture.fixture.venue?.name ?? fixture.fixture.venue?.city ?? '',
-    stage: normalizeStage(fixture.league.round),
+    stage,
     status,
-    homeScore: fixture.goals.home ?? fixture.score.fulltime.home,
-    awayScore: fixture.goals.away ?? fixture.score.fulltime.away,
-    qualifier: getQualifier(fixture),
+    homeScore: fixtureScore(fixture, 'home'),
+    awayScore: fixtureScore(fixture, 'away'),
+    qualifier: getQualifier(fixture, stage),
     minute: status === 'live' ? fixture.fixture.status.elapsed : null,
     statusShort: status === 'live' ? fixture.fixture.status.short : null,
     apiFootballFixtureId: fixture.fixture.id,

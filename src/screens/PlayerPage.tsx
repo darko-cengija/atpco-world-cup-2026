@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '@/firebase'
 import { getCountryName } from '@/lib/translations'
+import { actualOutcome as computeActualOutcome } from '@/lib/predictions'
 import { useWinningChances } from '@/hooks/useWinningChances'
 import type { PredictionOutcome, Team } from '@/types'
 import { TicketSpinner } from '@/components/TicketMark'
@@ -39,20 +40,6 @@ interface PastPrediction {
   awayScore: number
   actualOutcome: PredictionOutcome
   playerOutcome: PredictionOutcome | null
-}
-
-function computeOutcome(
-  home: number,
-  away: number,
-  stage: string,
-  qualifier: 'home' | 'away' | null,
-): PredictionOutcome {
-  if (home > away) return '1'
-  if (home < away) return '2'
-  if (!stage.toLowerCase().includes('group') && qualifier) {
-    return qualifier === 'home' ? 'X1' : 'X2'
-  }
-  return 'X'
 }
 
 const TH = 'px-2 py-2 font-mono font-bold text-[9px] uppercase tracking-[0.14em] text-brand-faint whitespace-nowrap'
@@ -202,7 +189,6 @@ export default function PlayerPage() {
         const fallback = (id: string) => ({ id, name: id, flag: '🏳️', group: '' })
         const homeTeam = teamById[data.homeTeamId as string] ?? fallback(data.homeTeamId as string)
         const awayTeam = teamById[data.awayTeamId as string] ?? fallback(data.awayTeamId as string)
-        const stage = (data.stage ?? 'Group Stage') as string
 
         preds.push({
           matchId: matchDoc.id,
@@ -211,10 +197,9 @@ export default function PlayerPage() {
           awayTeam,
           homeScore: data.homeScore as number,
           awayScore: data.awayScore as number,
-          actualOutcome: computeOutcome(
+          actualOutcome: computeActualOutcome(
             data.homeScore as number,
             data.awayScore as number,
-            stage,
             (data.qualifier ?? null) as 'home' | 'away' | null,
           ),
           playerOutcome: userPredByMatch[matchDoc.id] ?? null,

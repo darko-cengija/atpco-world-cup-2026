@@ -26,13 +26,10 @@ export function applyPredictionScore(
   outcome: PredictionOutcome,
 ) {
   const playerCount = userIds.length
-  const voterIds = new Set(predictions.map((prediction) => prediction.userId))
   const correctCount = predictions.filter((prediction) => prediction.outcome === outcome).length
 
   for (const userId of userIds) {
-    if (!voterIds.has(userId)) {
-      pointsByUserId[userId] -= 1 / playerCount
-    } else if (correctCount > 0 && predictions.find((prediction) => prediction.userId === userId)?.outcome === outcome) {
+    if (correctCount > 0 && predictions.find((prediction) => prediction.userId === userId)?.outcome === outcome) {
       pointsByUserId[userId] += playerCount / correctCount
     }
   }
