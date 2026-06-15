@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "test:live-results": "npm --prefix functions run build && node scripts/test-live-results.cjs",
+    "check:api-football-names": "npm --prefix functions run build && node scripts/check-api-football-names.cjs",
     "assets:generate": "node scripts/generate-icons.mjs",
     "audit:winning-chances": "npm --prefix functions run build && node scripts/audit-winning-chances-snapshots.cjs",
     "audit:knockout-predictions": "npm --prefix functions run build && node scripts/audit-knockout-predictions.cjs",

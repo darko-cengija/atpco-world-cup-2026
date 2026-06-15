@@ -42,7 +42,7 @@
   { "id": "saudi-arabia", "name": "Saudi Arabia", "flag": "🇸🇦", "confederation": "AFC", "group": "H", "fifaRank": 61, "drawSeedOrder": 41 },
   { "id": "jordan", "name": "Jordan", "flag": "🇯🇴", "confederation": "AFC", "group": "J", "fifaRank": 63, "drawSeedOrder": 42 },
   { "id": "bosnia-and-herzegovina", "name": "Bosnia and Herzegovina", "flag": "🇧🇦", "confederation": "UEFA", "group": "B", "fifaRank": 65, "drawSeedOrder": 43 },
-  { "id": "cabo-verde", "name": "Cabo Verde", "flag": "🇨🇻", "confederation": "CAF", "group": "H", "fifaRank": 69, "drawSeedOrder": 44 },
+  { "id": "cabo-verde", "name": "Cabo Verde", "flag": "🇨🇻", "confederation": "CAF", "group": "H", "fifaRank": 69, "drawSeedOrder": 44, "apiFootballAliases": ["Cape Verde", "Cape Verde Islands"] },
   { "id": "ghana", "name": "Ghana", "flag": "🇬🇭", "confederation": "CAF", "group": "L", "fifaRank": 74, "drawSeedOrder": 45 },
   { "id": "curacao", "name": "Curaçao", "flag": "🇨🇼", "confederation": "CONCACAF", "group": "E", "fifaRank": 82, "drawSeedOrder": 46 },
   { "id": "haiti", "name": "Haiti", "flag": "🇭🇹", "confederation": "CONCACAF", "group": "C", "fifaRank": 83, "drawSeedOrder": 47 },

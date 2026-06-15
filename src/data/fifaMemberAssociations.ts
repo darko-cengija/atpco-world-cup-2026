@@ -64,7 +64,7 @@ export const fifaMemberAssociations: FifaMemberAssociation[] = [
   { id: 'burkina-faso', name: 'Burkina Faso', flag: '🇧🇫', confederation: 'CAF' },
   { id: 'burundi', name: 'Burundi', flag: '🇧🇮', confederation: 'CAF' },
   { id: 'cameroon', name: 'Cameroon', flag: '🇨🇲', confederation: 'CAF' },
-  { id: 'cabo-verde', name: 'Cabo Verde', flag: '🇨🇻', confederation: 'CAF', apiFootballAliases: ['Cape Verde'] },
+  { id: 'cabo-verde', name: 'Cabo Verde', flag: '🇨🇻', confederation: 'CAF', apiFootballAliases: ['Cape Verde', 'Cape Verde Islands'] },
   { id: 'central-african-republic', name: 'Central African Republic', flag: '🇨🇫', confederation: 'CAF' },
   { id: 'chad', name: 'Chad', flag: '🇹🇩', confederation: 'CAF' },
   { id: 'comoros', name: 'Comoros', flag: '🇰🇲', confederation: 'CAF' },

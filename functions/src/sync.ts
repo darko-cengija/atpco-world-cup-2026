@@ -68,11 +68,12 @@ const LEAGUE_DEFAULTS = new Map<number, LeagueConfig>([
   [WORLD_CUP_LEAGUE_ID, { id: WORLD_CUP_LEAGUE_ID, season: WORLD_CUP_SEASON, name: 'FIFA World Cup' }],
 ])
 
-const API_NAME_ALIASES: Record<string, string> = {
+export const API_NAME_ALIASES: Record<string, string> = {
   'bosnia herzegovina': 'bosnia-and-herzegovina',
   'bosnia and herzegovina': 'bosnia-and-herzegovina',
   'cabo verde': 'cabo-verde',
   'cape verde': 'cabo-verde',
+  'cape verde islands': 'cabo-verde',
   'congo dr': 'congo-dr',
   'dr congo': 'congo-dr',
   'democratic republic of congo': 'congo-dr',
@@ -90,7 +91,7 @@ const API_NAME_ALIASES: Record<string, string> = {
   'usa': 'usa',
 }
 
-interface LocalTeamRow {
+export interface LocalTeamRow {
   id: string
   name?: string
   apiFootballAliases?: string[]
@@ -99,6 +100,12 @@ interface LocalTeamRow {
 interface LocalMatchRow {
   id: string
   ref: admin.firestore.DocumentReference
+  homeTeamId: string
+  awayTeamId: string
+}
+
+export interface LocalMatchCandidate {
+  id: string
   homeTeamId: string
   awayTeamId: string
 }
@@ -128,7 +135,7 @@ function normalizeStage(round: string) {
   return round || 'Regular Season'
 }
 
-function normalizeName(value: string) {
+export function normalizeName(value: string) {
   return value
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -451,7 +458,7 @@ async function loadLocalMatches(db: admin.firestore.Firestore): Promise<LocalMat
     .filter((match): match is LocalMatchRow => match !== null)
 }
 
-function buildLocalTeamNameMap(teams: LocalTeamRow[]) {
+export function buildLocalTeamNameMap(teams: LocalTeamRow[]) {
   const map = new Map<string, string>()
   for (const team of teams) {
     if (team.name) map.set(normalizeName(team.name), team.id)
@@ -461,8 +468,12 @@ function buildLocalTeamNameMap(teams: LocalTeamRow[]) {
   return map
 }
 
-function buildLocalMatchesByTeams(matches: LocalMatchRow[]) {
-  const map = new Map<string, LocalMatchRow>()
+export function toLocalTeamId(apiTeamName: string, teamNameMap: Map<string, string>) {
+  return teamNameMap.get(normalizeName(apiTeamName)) ?? null
+}
+
+function buildLocalMatchesByTeams<T extends { homeTeamId: string; awayTeamId: string }>(matches: T[]) {
+  const map = new Map<string, T>()
   for (const match of matches) {
     map.set(`${match.homeTeamId}:${match.awayTeamId}`, match)
     map.set(`${match.awayTeamId}:${match.homeTeamId}`, match)
@@ -470,15 +481,36 @@ function buildLocalMatchesByTeams(matches: LocalMatchRow[]) {
   return map
 }
 
-function mapFixtureToLocalMatch(
+function mapFixtureToLocalMatch<T extends LocalMatchCandidate>(
   fixture: ApiFootballFixture,
   teamNameMap: Map<string, string>,
-  matchesByTeams: Map<string, LocalMatchRow>,
+  matchesByTeams: Map<string, T>,
 ) {
-  const homeTeamId = teamNameMap.get(normalizeName(fixture.teams.home.name))
-  const awayTeamId = teamNameMap.get(normalizeName(fixture.teams.away.name))
+  const homeTeamId = toLocalTeamId(fixture.teams.home.name, teamNameMap)
+  const awayTeamId = toLocalTeamId(fixture.teams.away.name, teamNameMap)
   if (!homeTeamId || !awayTeamId) return null
   return matchesByTeams.get(`${homeTeamId}:${awayTeamId}`) ?? null
+}
+
+export function previewLocalFixtureMatch(
+  fixture: ApiFootballFixture,
+  teams: LocalTeamRow[],
+  matches: LocalMatchCandidate[],
+) {
+  const match = mapFixtureToLocalMatch(
+    fixture,
+    buildLocalTeamNameMap(teams),
+    buildLocalMatchesByTeams(matches),
+  )
+  if (!match) return null
+
+  return {
+    matchId: match.id,
+    patch: fixtureToMatchPatch(fixture, {
+      homeTeamId: match.homeTeamId,
+      awayTeamId: match.awayTeamId,
+    }),
+  }
 }
 
 export async function syncWorldCupFixtureCatalog(apiKey: string | null) {
